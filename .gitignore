@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Environment / secrets
+.env
+*.local
+
+# azd
+.azure/
+
+# Build artifacts
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Office temp/lock files
+~$*
+
+# Compiled Bicep artifact
+infra/main.json

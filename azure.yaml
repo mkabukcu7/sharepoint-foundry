@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: multimodal-workplace-chatbot
+metadata:
+  template: multimodal-workplace-chatbot@1.0.0
+services:
+  api:
+    project: ./src
+    language: py
+    host: containerapp
+    docker:
+      path: ../Dockerfile
+      context: ../
+hooks:
+  postprovision:
+    windows:
+      shell: pwsh
+      run: Write-Host "Provisioned. Next: build the index (python -m src.ingestion.pipeline) and create the agent (python -m src.agent.agent --create)."
+    posix:
+      shell: sh
+      run: echo "Provisioned. Next: build the index and create the agent."

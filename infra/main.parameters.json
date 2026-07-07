@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "baseName": { "value": "pgrchat" },
+    "location": { "value": "eastus2" },
+    "privateByDefault": { "value": false },
+    "searchSku": { "value": "basic" },
+    "searchLocation": { "value": "eastus" },
+    "deployerPrincipalId": { "value": "" },
+    "modelDeployments": {
+      "value": [
+        { "name": "gpt-4o", "model": "gpt-4o", "version": "2024-11-20", "capacity": 30 },
+        { "name": "text-embedding-3-large", "model": "text-embedding-3-large", "version": "1", "capacity": 50 }
+      ]
+    }
+  }
+}

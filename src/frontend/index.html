@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Enterprise Workplace Assistant</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="logo">PGR</span>
+      <span class="title">Workplace Assistant</span>
+    </div>
+    <span class="badge">AI assistant &middot; answers are grounded &amp; cited</span>
+  </header>
+
+  <main id="chat" class="chat" aria-live="polite">
+    <div class="msg assistant">
+      <div class="bubble">
+        Hi! I can answer questions from approved internal sources — policies,
+        recordings, and Tableau analytics. What would you like to know?
+      </div>
+    </div>
+  </main>
+
+  <form id="composer" class="composer" autocomplete="off">
+    <input id="input" class="input" type="text"
+           placeholder="Ask about a policy, recording, or metric…" />
+    <button id="send" class="send" type="submit">Send</button>
+  </form>
+
+  <footer class="disclaimer">
+    Responses are AI-generated and may be incomplete. Verify critical decisions
+    against the cited source.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
