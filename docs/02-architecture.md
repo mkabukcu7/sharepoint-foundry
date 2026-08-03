@@ -49,7 +49,7 @@ flowchart LR
     end
 
     T1 --> IDX[("Azure AI Search<br/>hybrid + vector + semantic")]
-    T2 --> SP[("SharePoint<br/>pgr-it site")]
+    T2 --> SP[("SharePoint<br/>Contoso IT site")]
     T3 --> TB[("Tableau<br/>REST / Metadata API")]
 
     subgraph Ingest["Ingestion & Enrichment Pipeline"]
@@ -77,7 +77,7 @@ flowchart LR
 | **Tools** | AI Search tool, SharePoint tool, Tableau tool, function/OpenAPI/MCP tools | Grounded retrieval, secure live lookup, live metrics, job-status/transcript lookups |
 | **Knowledge** | Azure AI Search | Hybrid/vector/semantic index with ACL + modality + freshness metadata |
 | **Ingestion** | Functions/Logic Apps + Document Intelligence + Speech/Video Indexer/Content Understanding | Multimodal extraction → normalized, security-trimmed chunks |
-| **Data sources** | SharePoint (pgr-it), Tableau | Source of truth for documents, media, metrics |
+| **Data sources** | SharePoint (Contoso IT), Tableau | Source of truth for documents, media, metrics |
 | **Platform** | Entra ID, Key Vault, Private Endpoints/VNet, Azure Policy | Identity, secrets, network isolation, guardrails |
 | **Operations** | App Insights, Log Analytics, Azure Monitor, Sentinel, Defender for Cloud | Tracing, metrics, security monitoring, alerting |
 

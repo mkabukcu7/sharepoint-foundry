@@ -30,7 +30,7 @@ The team will also establish a **business-focused evaluation foundation** and an
 - Produce a **governance and production-readiness foundation** for enterprise rollout.
 
 ### 2.2 Non-Goals
-- Production rollout to all PGR business units (this is an experiment / proof of value).
+- Production rollout to all business units (this is an experiment / proof of value).
 - Replacing existing enterprise search or BI tools.
 - Building net-new data platforms; the experiment reuses existing SharePoint and Tableau assets.
 - Formal certification/compliance sign-off (the experiment produces the *foundation* and recommendations, not final approvals).
@@ -77,7 +77,7 @@ The team will also establish a **business-focused evaluation foundation** and an
 | ID | Requirement |
 |---|---|
 | FR-1 | The chatbot SHALL accept natural-language queries via a chat interface (Web / Microsoft Teams). |
-| FR-2 | The chatbot SHALL ground answers in PGR-IT SharePoint content and return **citations** to source material. |
+| FR-2 | The chatbot SHALL ground answers in Contoso IT SharePoint content and return **citations** to source material. |
 | FR-3 | The chatbot SHALL process and retrieve from **text** documents (e.g., DOCX, PDF, PPTX, pages). |
 | FR-4 | The chatbot SHALL process **audio/video** content (transcription + indexing) for grounding. |
 | FR-5 | The chatbot SHALL answer questions over **structured data** (e.g., Tableau report metrics). |

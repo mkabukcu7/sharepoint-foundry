@@ -10,7 +10,7 @@
 targetScope = 'resourceGroup'
 
 @description('Base name used to derive resource names.')
-param baseName string = 'pgrchat'
+param baseName string = 'mmchat'
 
 @description('Azure region for all resources.')
 param location string = resourceGroup().location

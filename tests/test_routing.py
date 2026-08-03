@@ -62,3 +62,19 @@ def test_confidence_sufficient_and_reranked():
     assert r.sufficient is True
     assert len(r.kept) == 4
     assert r.kept[0].score >= r.kept[-1].score
+
+
+def test_confidence_insufficient_when_below_min_results():
+    # One chunk clears the score floor, but min_results demands two: the gate
+    # must abstain rather than answer from a single weak-corroboration chunk.
+    ev = [Evidence("c1", 0.9)]
+    r = assess_confidence(ev, min_score=0.3, min_results=2)
+    assert r.sufficient is False
+    assert r.top_score == 0.9
+    assert len(r.kept) == 1
+
+
+def test_metric_without_about_signal_has_no_override():
+    d = route("How many claims were filed this week?")
+    assert d.lane is Lane.TABLEAU
+    assert d.structured_override is False

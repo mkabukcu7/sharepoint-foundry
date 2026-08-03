@@ -15,7 +15,7 @@ clearly marked **[Customer prerequisite]** so you can plan for it.
 
 ```mermaid
 flowchart LR
-    subgraph RG["Resource group (rg-pgr-chatbot)"]
+    subgraph RG["Resource group (rg-mmchat)"]
         F["Azure AI Foundry account + project<br/>gpt-4o · text-embedding-3-large"]
         S["Azure AI Search<br/>workplace-knowledge index"]
         ST["Storage account<br/>(ingestion staging)"]
@@ -75,13 +75,13 @@ If your subscription has capacity for the defaults, this is the whole thing:
 
 ```powershell
 # From the repo root
-./scripts/deploy.ps1 -ResourceGroup rg-pgr-chatbot -Location eastus2
+./scripts/deploy.ps1 -ResourceGroup rg-mmchat -Location eastus2
 ```
 
 Linux/macOS:
 
 ```bash
-./scripts/deploy.sh -g rg-pgr-chatbot -l eastus2
+./scripts/deploy.sh -g rg-mmchat -l eastus2
 ```
 
 The script:
@@ -138,7 +138,7 @@ If you prefer to run the ARM/Bicep commands yourself:
 
 ```powershell
 # 1. Resource group
-az group create -n rg-pgr-chatbot -l eastus2
+az group create -n rg-mmchat -l eastus2
 
 # 2. Your object id (from the token, not Graph)
 $oid = (az account get-access-token --query accessToken -o tsv).Split('.')[1] |
@@ -150,7 +150,7 @@ $oid = (az account get-access-token --query accessToken -o tsv).Split('.')[1] |
   }
 
 # 3. Deploy
-az deployment group create -g rg-pgr-chatbot -n pgrchat-deploy `
+az deployment group create -g rg-mmchat -n mmchat-deploy `
   -f infra/main.bicep -p infra/main.parameters.json `
   -p location=eastus2 searchLocation=eastus searchSku=basic `
   -p privateByDefault=false deployerPrincipalId=$oid
@@ -159,7 +159,7 @@ az deployment group create -g rg-pgr-chatbot -n pgrchat-deploy `
 Preview changes without deploying using **what-if**:
 
 ```powershell
-az deployment group what-if -g rg-pgr-chatbot `
+az deployment group what-if -g rg-mmchat `
   -f infra/main.bicep -p infra/main.parameters.json -p deployerPrincipalId=$oid
 ```
 
@@ -167,7 +167,7 @@ az deployment group what-if -g rg-pgr-chatbot `
 
 | Parameter | Default | Description |
 | --- | --- | --- |
-| `baseName` | `pgrchat` | Prefix for resource names |
+| `baseName` | `mmchat` | Prefix for resource names |
 | `location` | `eastus2` | Primary region for Foundry, Storage, Key Vault, monitoring |
 | `searchLocation` | `eastus` | Region for Azure AI Search (split out for capacity) |
 | `searchSku` | `basic` | Search SKU (`basic`, `standard`, …) |
@@ -252,10 +252,10 @@ provisioning steps above.
 
 ```powershell
 # Search index exists and reports the expected field count
-az search service show -g rg-pgr-chatbot -n <search-name> --query "name" -o tsv
+az search service show -g rg-mmchat -n <search-name> --query "name" -o tsv
 
 # Model deployments are live
-az cognitiveservices account deployment list -g rg-pgr-chatbot -n <foundry-account> `
+az cognitiveservices account deployment list -g rg-mmchat -n <foundry-account> `
   --query "[].{name:name,model:properties.model.name}" -o table
 
 # Unit tests (no Azure required)
@@ -283,10 +283,10 @@ python -m pytest -q
 
 ```powershell
 # Delete the resource group (async)
-./scripts/teardown.ps1 -ResourceGroup rg-pgr-chatbot
+./scripts/teardown.ps1 -ResourceGroup rg-mmchat
 
 # Also purge soft-deleted Foundry account + Key Vault so the base name is reusable
-./scripts/teardown.ps1 -ResourceGroup rg-pgr-chatbot -Purge
+./scripts/teardown.ps1 -ResourceGroup rg-mmchat -Purge
 ```
 
 ---
@@ -297,10 +297,10 @@ The commands in this guide were validated against this live deployment:
 
 | Item | Value |
 | --- | --- |
-| Resource group | `rg-pgr-chatbot` |
-| Foundry account / project | `pgrchat-aifoundry-*` / `pgrchat-project` (eastus2) |
+| Resource group | `rg-mmchat` |
+| Foundry account / project | `mmchat-aifoundry-*` / `mmchat-project` (eastus2) |
 | Models | `gpt-4o` (2024-11-20, cap 30), `text-embedding-3-large` (v1, cap 50) |
-| Search | `pgrchat-search-*` (eastus, `basic`) |
+| Search | `mmchat-search-*` (eastus, `basic`) |
 | Index | `workplace-knowledge` (24 fields, vector + semantic) |
 | Other | Storage, Key Vault, Log Analytics, App Insights, user-assigned identity |
 

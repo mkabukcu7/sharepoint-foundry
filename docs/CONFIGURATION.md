@@ -86,10 +86,14 @@ Ingests SharePoint content into an Azure AI Search agentic-retrieval pipeline
 | Variable | Example | Description |
 | --- | --- | --- |
 | `TABLEAU_SERVER_URL` | `https://tableau.example.com` | Tableau Server/Cloud URL |
-| `TABLEAU_SITE_ID` | `pgr` | Tableau site id |
+| `TABLEAU_SITE_ID` | `analytics` | Tableau site id |
 | `TABLEAU_API_VERSION` | `3.21` | REST API version |
 | `TABLEAU_PAT_NAME` | `chatbot-pat` | Personal Access Token name (store secret in Key Vault) |
 | `TABLEAU_PAT_SECRET` | *(secret)* | PAT secret — Key Vault reference in deployed environments |
+| `TABLEAU_DATASOURCE_LUID` | *(GUID)* | Published datasource LUID queried via the VizQL Data Service (required for the Tableau lane) |
+| `TABLEAU_MEASURE_FIELD` | `Sales` | Measure field aggregated for the metric (defaults to the requested metric name) |
+| `TABLEAU_DATE_FIELD` | `Order Date` | Date dimension used for time-grain filtering |
+| `TABLEAU_SOURCE_WORKBOOK` | `RevenueWB` | Source workbook name surfaced in citations (defaults to the datasource LUID) |
 
 ## Behavior / thresholds
 

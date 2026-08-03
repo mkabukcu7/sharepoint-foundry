@@ -14,7 +14,7 @@
 
 ## 1. Objective & Approach
 
-Deliver a working multimodal workplace chatbot on Microsoft Foundry that grounds answers on PGR-IT SharePoint content (text, audio/video, Tableau structured data), proving the full AI lifecycle (build → test → deploy → host), with robust error handling, a business-focused evaluation foundation, and a governance/production-readiness foundation.
+Deliver a working multimodal workplace chatbot on Microsoft Foundry that grounds answers on Contoso IT SharePoint content (text, audio/video, Tableau structured data), proving the full AI lifecycle (build → test → deploy → host), with robust error handling, a business-focused evaluation foundation, and a governance/production-readiness foundation.
 
 **Approach:** time-boxed, iterative experiment delivered in six phases over ~10–12 weeks, with evaluation gates between phases and a stakeholder review at each milestone. Grounded-first, identity-bound, private-by-default, measurable-quality principles apply throughout (see `02-architecture.md`).
 
@@ -103,7 +103,7 @@ gantt
 ## 7. Dependencies
 
 - Azure subscription + Foundry model quota in an approved region.
-- Entra ID tenant, SharePoint (pgr-it) permissions, Tableau API access.
+- Entra ID tenant, SharePoint (Contoso IT) permissions, Tableau API access.
 - Availability of business SMEs for answer validation.
 - Availability/maturity of preview Foundry features (SharePoint tool, multimodal grounding) — with GA fallbacks.
 

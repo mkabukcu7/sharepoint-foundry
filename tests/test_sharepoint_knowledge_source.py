@@ -13,7 +13,7 @@ from src.ingestion.sharepoint_knowledge_source import (
 def _base_kwargs(**overrides):
     kwargs = dict(
         name="sharepoint-indexed-ks",
-        connection_string="SharePointOnlineEndpoint=https://contoso.sharepoint.com/sites/pgr-it;ApplicationId=app;TenantId=tid",
+        connection_string="SharePointOnlineEndpoint=https://contoso.sharepoint.com/sites/contoso-it;ApplicationId=app;TenantId=tid",
         aoai_endpoint="https://foundry.openai.azure.com",
     )
     kwargs.update(overrides)
@@ -50,7 +50,7 @@ def test_embedding_model_uses_managed_identity_no_key():
 def test_query_scoping_and_permissions_included():
     ks = build_indexed_sharepoint_knowledge_source(
         **_base_kwargs(
-            query="includeLibrary=https://contoso.sharepoint.com/sites/pgr-it/Policies",
+            query="includeLibrary=https://contoso.sharepoint.com/sites/contoso-it/Policies",
             ingestion_permission_options=["userIds", "groupIds"],
             container_name="allSiteLibraries",
         )

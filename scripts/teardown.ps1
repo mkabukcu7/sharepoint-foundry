@@ -5,11 +5,11 @@
     can be reused.
 
 .EXAMPLE
-    ./scripts/teardown.ps1 -ResourceGroup rg-pgr-chatbot
+    ./scripts/teardown.ps1 -ResourceGroup rg-mmchat
 #>
 [CmdletBinding()]
 param(
-    [string]$ResourceGroup = "rg-pgr-chatbot",
+    [string]$ResourceGroup = "rg-mmchat",
     [switch]$Purge
 )
 
