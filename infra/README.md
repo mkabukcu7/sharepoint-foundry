@@ -21,15 +21,15 @@ The simplest path is the repo-root script, which resolves your object id
 safely and writes `.env` from the outputs:
 
 ```powershell
-./scripts/deploy.ps1 -ResourceGroup rg-pgr-chatbot -Location eastus2
+./scripts/deploy.ps1 -ResourceGroup rg-mmchat -Location eastus2
 ```
 
 Equivalent manual command:
 
 ```powershell
-az group create -n rg-pgr-chatbot -l eastus2
+az group create -n rg-mmchat -l eastus2
 az deployment group create `
-  -g rg-pgr-chatbot `
+  -g rg-mmchat `
   -f infra/main.bicep `
   -p infra/main.parameters.json `
   -p deployerPrincipalId=<your-object-id>

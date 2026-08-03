@@ -283,7 +283,7 @@ def _payload_from_settings(args: argparse.Namespace) -> Dict[str, Any]:
         embedding_model=s.embedding_model_deployment,
         container_name=s.sharepoint_container_name,
         query=s.sharepoint_ks_query or None,
-        description="Indexed SharePoint knowledge source (pgr-it).",
+        description="Indexed SharePoint knowledge source (Contoso IT).",
         disable_image_verbalization=not args.verbalize_images,
         vision_deployment=s.vision_model_deployment,
         vision_model=s.vision_model_deployment,

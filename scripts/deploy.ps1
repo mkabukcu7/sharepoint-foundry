@@ -11,21 +11,21 @@
     Requires: Azure CLI (az) 2.60+, authenticated with `az login`.
 
 .EXAMPLE
-    ./scripts/deploy.ps1 -ResourceGroup rg-pgr-chatbot -Location eastus2
+    ./scripts/deploy.ps1 -ResourceGroup rg-mmchat -Location eastus2
 
 .EXAMPLE
-    ./scripts/deploy.ps1 -ResourceGroup rg-pgr-chatbot -Location eastus2 `
+    ./scripts/deploy.ps1 -ResourceGroup rg-mmchat -Location eastus2 `
         -SearchLocation eastus -SearchSku basic
 #>
 [CmdletBinding()]
 param(
-    [string]$ResourceGroup = "rg-pgr-chatbot",
+    [string]$ResourceGroup = "rg-mmchat",
     [string]$Location = "eastus2",
-    [string]$BaseName = "pgrchat",
+    [string]$BaseName = "mmchat",
     [string]$SearchLocation = "eastus",
     [string]$SearchSku = "basic",
     [bool]$PrivateByDefault = $false,
-    [string]$DeploymentName = "pgrchat-deploy"
+    [string]$DeploymentName = "mmchat-deploy"
 )
 
 $ErrorActionPreference = "Stop"

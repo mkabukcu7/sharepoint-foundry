@@ -105,14 +105,14 @@ One command (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for prerequisites,
 quota pre-checks, and troubleshooting):
 
 ```powershell
-./scripts/deploy.ps1 -ResourceGroup rg-pgr-chatbot -Location eastus2
+./scripts/deploy.ps1 -ResourceGroup rg-mmchat -Location eastus2
 python -m src.ingestion.pipeline --ensure-index
 ```
 
 Linux/macOS:
 
 ```bash
-./scripts/deploy.sh -g rg-pgr-chatbot -l eastus2
+./scripts/deploy.sh -g rg-mmchat -l eastus2
 python -m src.ingestion.pipeline --ensure-index
 ```
 

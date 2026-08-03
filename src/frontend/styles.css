@@ -1,8 +1,8 @@
 :root {
-  --pgr-blue: #0033a0;
-  --pgr-blue-dark: #002772;
+  --brand-blue: #0f6cbd;
+  --brand-blue-dark: #0a5ba8;
   --bg: #f4f6fb;
-  --user: #0033a0;
+  --user: #0f6cbd;
   --assistant: #ffffff;
   --text: #1b1f2a;
   --muted: #5b6478;
@@ -26,14 +26,14 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: var(--pgr-blue);
+  background: var(--brand-blue);
   color: #fff;
 }
 
 .brand { display: flex; align-items: center; gap: 10px; }
 .logo {
   background: #fff;
-  color: var(--pgr-blue);
+  color: var(--brand-blue);
   font-weight: 800;
   border-radius: 6px;
   padding: 2px 8px;
@@ -77,7 +77,7 @@ body {
   font-size: 0.78rem;
   color: var(--muted);
 }
-.citations a { color: var(--pgr-blue); }
+.citations a { color: var(--brand-blue); }
 
 .composer {
   display: flex;
@@ -93,17 +93,17 @@ body {
   border-radius: 10px;
   font-size: 0.95rem;
 }
-.input:focus { outline: 2px solid var(--pgr-blue); border-color: transparent; }
+.input:focus { outline: 2px solid var(--brand-blue); border-color: transparent; }
 .send {
   padding: 0 22px;
-  background: var(--pgr-blue);
+  background: var(--brand-blue);
   color: #fff;
   border: none;
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
 }
-.send:hover { background: var(--pgr-blue-dark); }
+.send:hover { background: var(--brand-blue-dark); }
 .send:disabled { opacity: 0.6; cursor: default; }
 
 .disclaimer {

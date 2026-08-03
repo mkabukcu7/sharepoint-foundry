@@ -11,13 +11,13 @@
 #
 set -euo pipefail
 
-RESOURCE_GROUP="rg-pgr-chatbot"
+RESOURCE_GROUP="rg-mmchat"
 LOCATION="eastus2"
-BASE_NAME="pgrchat"
+BASE_NAME="mmchat"
 SEARCH_LOCATION="eastus"
 SEARCH_SKU="basic"
 PRIVATE="false"
-DEPLOYMENT_NAME="pgrchat-deploy"
+DEPLOYMENT_NAME="mmchat-deploy"
 
 while getopts "g:l:b:s:k:p:n:" opt; do
   case $opt in
