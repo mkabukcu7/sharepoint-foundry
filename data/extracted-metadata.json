@@ -1,0 +1,318 @@
+[
+  {
+    "documentName": "01-beneficiary-change-form-guide.docx",
+    "fileType": "DOCX",
+    "contentOwner": "Richard Talbot",
+    "summary": "Beneficiary Change Form Guide. Business area: Policy Servicing. Audience: Customer. Content owner: Richard Talbot. Last reviewed age days: 45. Explains beneficiary change forms, identity checks, and policyholder next steps.",
+    "topics": [
+      "Policy Servicing"
+    ],
+    "businessArea": "Insurance",
+    "audience": "Customer",
+    "documentRisk": "External",
+    "lastReviewedDate": "2026-06-23",
+    "freshnessStatus": "Current",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Customer",
+      "External",
+      "Insurance",
+      "Policy Servicing"
+    ],
+    "reviewStatus": "Approved for AI",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\01-beneficiary-change-form-guide.docx",
+    "extractedCharacters": 223
+  },
+  {
+    "documentName": "02-advisor-portal-search-playbook.pptx",
+    "fileType": "PPTX",
+    "contentOwner": "Zahil John",
+    "summary": "Advisor Portal Search Playbook Advisor Portal Search Playbook. Business area: Advisor Experience. Audience: Advisor. Content owner: Zahil John. Last reviewed age days: 130. Advisor content for finding client policy documents, service options, and education resources.",
+    "topics": [
+      "Advisor Experience",
+      "Policy Servicing"
+    ],
+    "businessArea": "Wealth",
+    "audience": "Advisor",
+    "documentRisk": "Internal",
+    "lastReviewedDate": "2026-03-30",
+    "freshnessStatus": "Current",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Advisor",
+      "Advisor Experience",
+      "Internal",
+      "Policy Servicing",
+      "Wealth"
+    ],
+    "reviewStatus": "Approved for AI",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\02-advisor-portal-search-playbook.pptx",
+    "extractedCharacters": 267
+  },
+  {
+    "documentName": "03-claims-intake-procedure.pdf",
+    "fileType": "PDF",
+    "contentOwner": "Unassigned",
+    "summary": "%PDF-1.4\n1 0 obj <<>> endobj\n2 0 obj << /Length 268 >> stream\nBT /F1 12 Tf 72 720 Td (Claims Intake Procedure. Business area: Claims. Audience: Internal Operations. Content owner: Unassigned. Last reviewed age days: 410. Internal claims intake workflow with SME review...",
+    "topics": [
+      "Claims"
+    ],
+    "businessArea": "Claims",
+    "audience": "Internal Operations",
+    "documentRisk": "Internal",
+    "lastReviewedDate": "2025-06-23",
+    "freshnessStatus": "Stale",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Claims",
+      "Internal",
+      "Internal Operations"
+    ],
+    "reviewStatus": "Review Required",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\03-claims-intake-procedure.pdf",
+    "extractedCharacters": 362
+  },
+  {
+    "documentName": "04-retirement-rollover-faq.docx",
+    "fileType": "DOCX",
+    "contentOwner": "Madi Smith",
+    "summary": "Retirement Rollover FAQ. Business area: Retirement. Audience: Customer. Content owner: Madi Smith. Last reviewed age days: 220. Customer FAQ for retirement rollover options, tax forms, and advisor handoff.",
+    "topics": [
+      "Advisor Experience",
+      "Forms",
+      "Retirement"
+    ],
+    "businessArea": "Retirement",
+    "audience": "Customer",
+    "documentRisk": "External",
+    "lastReviewedDate": "2025-12-30",
+    "freshnessStatus": "Needs Review",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Advisor Experience",
+      "Customer",
+      "External",
+      "Forms",
+      "Retirement"
+    ],
+    "reviewStatus": "Review Required",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\04-retirement-rollover-faq.docx",
+    "extractedCharacters": 205
+  },
+  {
+    "documentName": "05-pricing-exception-matrix.pptx",
+    "fileType": "PPTX",
+    "contentOwner": "Richard Talbot",
+    "summary": "Pricing Exception Matrix Pricing Exception Matrix. Business area: Pricing. Audience: Internal Operations. Content owner: Richard Talbot. Last reviewed age days: 30. Confidential pricing and fee guidance for exceptions, commission notes, and internal approval.",
+    "topics": [
+      "Pricing"
+    ],
+    "businessArea": "Enterprise Knowledge",
+    "audience": "Internal Operations",
+    "documentRisk": "High Risk",
+    "lastReviewedDate": "2026-07-08",
+    "freshnessStatus": "Current",
+    "containsPricing": true,
+    "containsConfidentialInfo": true,
+    "suggestedTags": [
+      "Enterprise Knowledge",
+      "High Risk",
+      "Internal Operations",
+      "Pricing"
+    ],
+    "reviewStatus": "Human Review Required",
+    "humanReviewRequired": true,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\05-pricing-exception-matrix.pptx",
+    "extractedCharacters": 259
+  },
+  {
+    "documentName": "06-privacy-and-compliance-overview.pdf",
+    "fileType": "PDF",
+    "contentOwner": "Zahil John",
+    "summary": "%PDF-1.4\n1 0 obj <<>> endobj\n2 0 obj << /Length 288 >> stream\nBT /F1 12 Tf 72 720 Td (Privacy and Compliance Overview. Business area: Compliance. Audience: Internal Operations. Content owner: Zahil John. Last reviewed age days: 500. Regulatory privacy content covering data...",
+    "topics": [
+      "Compliance"
+    ],
+    "businessArea": "Compliance",
+    "audience": "Customer",
+    "documentRisk": "High Risk",
+    "lastReviewedDate": "2025-03-25",
+    "freshnessStatus": "Stale",
+    "containsPricing": false,
+    "containsConfidentialInfo": true,
+    "suggestedTags": [
+      "Compliance",
+      "Customer",
+      "High Risk"
+    ],
+    "reviewStatus": "Human Review Required",
+    "humanReviewRequired": true,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\06-privacy-and-compliance-overview.pdf",
+    "extractedCharacters": 382
+  },
+  {
+    "documentName": "07-life-insurance-product-basics.docx",
+    "fileType": "DOCX",
+    "contentOwner": "Unassigned",
+    "summary": "Life Insurance Product Basics. Business area: Insurance. Audience: Customer. Content owner: Unassigned. Last reviewed age days: 80. Educational content for life insurance policies, beneficiaries, and common forms.",
+    "topics": [
+      "Insurance"
+    ],
+    "businessArea": "Insurance",
+    "audience": "Customer",
+    "documentRisk": "External",
+    "lastReviewedDate": "2026-05-19",
+    "freshnessStatus": "Current",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Customer",
+      "External",
+      "Insurance"
+    ],
+    "reviewStatus": "Owner Required",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\07-life-insurance-product-basics.docx",
+    "extractedCharacters": 213
+  },
+  {
+    "documentName": "08-contact-center-escalation-guide.pptx",
+    "fileType": "PPTX",
+    "contentOwner": "Madi Smith",
+    "summary": "Contact Center Escalation Guide Contact Center Escalation Guide. Business area: Policy Servicing. Audience: Internal Operations. Content owner: Madi Smith. Last reviewed age days: 370. Support escalation workflow for policy servicing and unresolved customer issues.",
+    "topics": [
+      "Policy Servicing"
+    ],
+    "businessArea": "Insurance",
+    "audience": "Customer",
+    "documentRisk": "External",
+    "lastReviewedDate": "2025-08-02",
+    "freshnessStatus": "Stale",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Customer",
+      "External",
+      "Insurance",
+      "Policy Servicing"
+    ],
+    "reviewStatus": "Review Required",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\08-contact-center-escalation-guide.pptx",
+    "extractedCharacters": 265
+  },
+  {
+    "documentName": "09-investment-education-landing-page.pdf",
+    "fileType": "PDF",
+    "contentOwner": "Richard Talbot",
+    "summary": "%PDF-1.4\n1 0 obj <<>> endobj\n2 0 obj << /Length 254 >> stream\nBT /F1 12 Tf 72 720 Td (Investment Education Landing Page. Business area: Wealth. Audience: Customer. Content owner: Richard Talbot. Last reviewed age days: 160. Educational investment concepts and advisor-connect...",
+    "topics": [
+      "Advisor Experience",
+      "Wealth"
+    ],
+    "businessArea": "Wealth",
+    "audience": "Customer",
+    "documentRisk": "External",
+    "lastReviewedDate": "2026-02-28",
+    "freshnessStatus": "Current",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Advisor Experience",
+      "Customer",
+      "External",
+      "Wealth"
+    ],
+    "reviewStatus": "Approved for AI",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\09-investment-education-landing-page.pdf",
+    "extractedCharacters": 348
+  },
+  {
+    "documentName": "10-tax-forms-knowledge-article.docx",
+    "fileType": "DOCX",
+    "contentOwner": "Zahil John",
+    "summary": "Tax Forms Knowledge Article. Business area: Forms. Audience: Customer. Content owner: Zahil John. Last reviewed age days: 395. Guidance for common tax forms, document download paths, and seasonal servicing questions.",
+    "topics": [
+      "Forms"
+    ],
+    "businessArea": "Enterprise Knowledge",
+    "audience": "Customer",
+    "documentRisk": "External",
+    "lastReviewedDate": "2025-07-08",
+    "freshnessStatus": "Stale",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Customer",
+      "Enterprise Knowledge",
+      "External",
+      "Forms"
+    ],
+    "reviewStatus": "Review Required",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\10-tax-forms-knowledge-article.docx",
+    "extractedCharacters": 216
+  },
+  {
+    "documentName": "11-advisor-compliance-checklist.pptx",
+    "fileType": "PPTX",
+    "contentOwner": "Unassigned",
+    "summary": "Advisor Compliance Checklist Advisor Compliance Checklist. Business area: Compliance. Audience: Advisor. Content owner: Unassigned. Last reviewed age days: 250. Advisor-facing compliance checklist for approved language and review history.",
+    "topics": [
+      "Advisor Experience",
+      "Compliance"
+    ],
+    "businessArea": "Wealth",
+    "audience": "Advisor",
+    "documentRisk": "Internal",
+    "lastReviewedDate": "2025-11-30",
+    "freshnessStatus": "Needs Review",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Advisor",
+      "Advisor Experience",
+      "Compliance",
+      "Internal",
+      "Wealth"
+    ],
+    "reviewStatus": "Review Required",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\11-advisor-compliance-checklist.pptx",
+    "extractedCharacters": 238
+  },
+  {
+    "documentName": "12-death-claims-customer-journey.pdf",
+    "fileType": "PDF",
+    "contentOwner": "Madi Smith",
+    "summary": "%PDF-1.4\n1 0 obj <<>> endobj\n2 0 obj << /Length 263 >> stream\nBT /F1 12 Tf 72 720 Td (Death Claims Customer Journey. Business area: Claims. Audience: Customer. Content owner: Madi Smith. Last reviewed age days: 25. Customer journey for death claims, required forms, and...",
+    "topics": [
+      "Claims"
+    ],
+    "businessArea": "Claims",
+    "audience": "Customer",
+    "documentRisk": "External",
+    "lastReviewedDate": "2026-07-13",
+    "freshnessStatus": "Current",
+    "containsPricing": false,
+    "containsConfidentialInfo": false,
+    "suggestedTags": [
+      "Claims",
+      "Customer",
+      "External"
+    ],
+    "reviewStatus": "Approved for AI",
+    "humanReviewRequired": false,
+    "sourcePath": "C:\\workspace\\knowledge-agent-mvp\\sample-documents\\12-death-claims-customer-journey.pdf",
+    "extractedCharacters": 357
+  }
+]

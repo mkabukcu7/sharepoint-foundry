@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Agent Transparency Dashboard</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+    body { margin: 0; background: var(--cp-bg); color: var(--cp-text); font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; }
+    main { padding: 32px; }
+    .hero, .panel, .metric { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 16px; box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border); }
+    .hero { padding: 32px; margin-bottom: 20px; }
+    .eyebrow { color: var(--cp-accent); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    h1 { margin: 0; font-size: 42px; }
+    .cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px; }
+    .metric { padding: 16px; }
+    .metric span { color: var(--cp-text-muted); display: block; }
+    .metric strong { display: block; font-size: 28px; margin-top: 8px; }
+    .success strong { color: var(--cp-success); }
+    .warning strong { color: var(--cp-warning); }
+    .danger strong { color: var(--cp-danger); }
+    .layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .panel { padding: 20px; overflow: hidden; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid var(--cp-border); padding: 10px; text-align: left; vertical-align: top; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: var(--cp-accent-soft); }
+    .pill { border: 1px solid var(--cp-border); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+    .Current { color: var(--cp-success); }
+    .NeedsReview { color: var(--cp-warning); }
+    .Stale { color: var(--cp-danger); }
+    dl { display: grid; grid-template-columns: 120px 1fr; gap: 8px; }
+    dt { color: var(--cp-text-muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tags span { background: var(--cp-accent-soft); color: var(--cp-accent); border-radius: 999px; padding: 4px 10px; }
+    @media (max-width: 1100px) { .cards { grid-template-columns: repeat(2, 1fr); } .layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">SharePoint Knowledge Agent MVP</p>
+      <h1>Transparency Dashboard</h1>
+      <p>AI-assisted tagging, summarization, freshness detection, and governance tracking for SharePoint knowledge content.</p>
+    </section>
+    <section class="cards" id="cards"></section>
+    <section class="layout">
+      <div class="panel">
+        <h2>Knowledge inventory</h2>
+        <table>
+          <thead><tr><th>Document</th><th>Area</th><th>Owner</th><th>Freshness</th><th>Review</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="panel" id="details"><h2>Document details</h2></div>
+    </section>
+  </main>
+  <script>
+    const api = "/api/documents";
+    fetch(api).then(r => r.json()).then(render).catch(() => {
+      document.getElementById("rows").innerHTML = "<tr><td colspan='5'>Run the FastAPI backend to load extracted metadata.</td></tr>";
+    });
+    function render(docs) {
+      const total = docs.length || 1;
+      const count = (fn) => docs.filter(fn).length;
+      const current = count(d => d.freshnessStatus === "Current");
+      const reviewed = count(d => ["Approved for AI", "Human Review Required"].includes(d.reviewStatus));
+      const owned = count(d => d.contentOwner !== "Unassigned");
+      const score = Math.round(((current / total) + (reviewed / total) + (owned / total)) / 3 * 100);
+      const metrics = [
+        ["Total documents", docs.length, ""],
+        ["Current", current, "success"],
+        ["Needs Review", count(d => d.freshnessStatus === "Needs Review"), "warning"],
+        ["Stale", count(d => d.freshnessStatus === "Stale"), "danger"],
+        ["High Risk", count(d => d.documentRisk === "High Risk"), "danger"],
+        ["Transparency Score", score + "%", ""]
+      ];
+      document.getElementById("cards").innerHTML = metrics.map(m => `<article class="metric ${m[2]}"><span>${m[0]}</span><strong>${m[1]}</strong></article>`).join("");
+      document.getElementById("rows").innerHTML = docs.map((d, i) => `<tr data-index="${i}"><td>${d.documentName}</td><td>${d.businessArea}</td><td>${d.contentOwner}</td><td><span class="pill ${d.freshnessStatus.replace(" ", "")}">${d.freshnessStatus}</span></td><td>${d.reviewStatus}</td></tr>`).join("");
+      document.querySelectorAll("tbody tr").forEach(row => row.addEventListener("click", () => show(docs[Number(row.dataset.index)])));
+      show(docs[0]);
+    }
+    function show(d) {
+      if (!d) return;
+      document.getElementById("details").innerHTML = `<h2>Document details</h2><h3>${d.documentName}</h3><p>${d.summary}</p><dl><dt>Owner</dt><dd>${d.contentOwner}</dd><dt>Audience</dt><dd>${d.audience}</dd><dt>Risk</dt><dd>${d.documentRisk}</dd><dt>Last reviewed</dt><dd>${d.lastReviewedDate}</dd><dt>Characters</dt><dd>${d.extractedCharacters}</dd></dl><h3>Suggested tags</h3><div class="tags">${d.suggestedTags.map(t => `<span>${t}</span>`).join("")}</div>`;
+    }
+  </script>
+</body>
+</html>
+
