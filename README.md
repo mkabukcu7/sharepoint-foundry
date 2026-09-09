@@ -1,161 +1,85 @@
-# Multimodal Workplace Chatbot on Microsoft Foundry
+# Knowledge Metadata Agent MVP
 
-> A reference implementation of a modern, multimodal enterprise workplace
-> chatbot built on **Microsoft Foundry** (Azure AI Foundry) — grounding on
-> SharePoint, documents, audio/video, and structured Tableau data, with robust
-> error handling, graceful degradation, and a business-focused evaluation
-> harness.
+Proof-of-concept repository showing AI-powered metadata extraction and tagging for an enterprise document library.
 
-<p align="left">
-  <img alt="Bicep" src="https://img.shields.io/badge/IaC-Bicep-0078D4">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-3776AB">
-  <img alt="Azure AI Foundry" src="https://img.shields.io/badge/Azure%20AI-Foundry-0062AD">
-  <img alt="License" src="https://img.shields.io/badge/License-MIT-green">
-</p>
+The MVP ingests 12 representative PDF, Word, and PowerPoint documents, extracts their text, uses a Microsoft Foundry prompt agent to generate metadata, and presents a filterable catalog. The demo does not require SharePoint.
 
-This repository prototype was produced for the **AI4Ops Enablement team** to evaluate
-Microsoft Foundry across the full AI solution lifecycle — development, testing,
-deployment, and hosting — using realistic enterprise grounding sources.
+## What this demonstrates
 
-> **Sample-data disclaimer:** All scenarios, prompts, and any data in this repo
-> are illustrative samples for a technical experiment. They do not represent
-> real customer data, policies, or production configuration. Replace grounding
-> sources and thresholds with your own before any production use.
+- Automated text extraction from representative enterprise documents
+- AI-generated summaries, themes, tags, language, author, sentiment, business area, audience, and metadata category
+- Filtering by themes, tags, language, author, and sentiment
+- Grouping by category, business area, language, author, or sentiment
+- Knowledge-area rollups for review status, recorded approval, and review recency
+- Country-of-origin extraction with filtering and grouping
+- Optional free-form metadata extraction during batch upload
+- Configurable catalog column for standard or free-form metadata fields
+- Direct links from metadata records to their source demo documents
+- Pluggable Microsoft Foundry and deterministic mock providers
 
----
+## Repository structure
 
-## Highlights
-
-- **Multi-source grounding** — a curated Azure AI Search lane (vector +
-  semantic) for precise include/exclude control, plus a live SharePoint
-  grounding lane via the Foundry SharePoint tool.
-- **Truly multimodal ingestion** — text, documents (Document Intelligence),
-  audio/video (Speech batch transcription), and structured data (Tableau).
-- **Graceful degradation** — user-friendly fallbacks for unavailable sources,
-  unanswerable queries, and low model confidence — never raw errors.
-- **Business-focused evaluation** — a golden dataset and Foundry-built-in
-  Evaluations harness with groundedness/relevance gates.
-- **Production-minded landing zone** — Bicep IaC, RBAC-only (local auth
-  disabled), managed identity, Key Vault, and full App Insights observability.
-
----
-
-## Architecture
-
-```mermaid
-flowchart TB
-    U["Business user"] --> API["FastAPI backend + web chat UI"]
-    API --> AG["Foundry hosted agent<br/>(orchestration · routing · safety)"]
-
-    AG --> SAFE["Content Safety / Prompt Shields"]
-    AG --> ROUTE{"Route by intent<br/>& confidence"}
-
-    ROUTE -->|knowledge| SEARCH["Azure AI Search<br/>workplace-knowledge index"]
-    ROUTE -->|live docs| SP["SharePoint grounding tool<br/>(M365 Copilot Retrieval API)"]
-    ROUTE -->|metrics| TAB["Tableau tool"]
-    ROUTE -->|low confidence| DEG["Graceful degradation<br/>fallback response"]
-
-    subgraph ING["Multimodal ingestion"]
-        DOC["Document Intelligence"] --> IDX["Chunk + embed + index"]
-        SPX["Speech transcription"] --> IDX
-        TABX["Tableau extract"] --> IDX
-    end
-    IDX --> SEARCH
-
-    AG --> OBS["App Insights / Log Analytics<br/>tracing & evaluation"]
+```text
+knowledge-agent-mvp/
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── models/
+│   │   └── services/
+│   ├── requirements.txt
+│   └── scripts/
+├── frontend/
+│   └── static-demo.html
+├── sample-documents/
+├── data/
+│   └── extracted-metadata.json
+└── docs/
+	└── architecture.md
 ```
-
-See [`docs/02-architecture.md`](docs/02-architecture.md) for the full,
-architect-reviewed design (RAG topology, index schema, error-handling copy,
-evaluation thresholds, governance, and network isolation).
-
----
-
-## Repository map
-
-| Path | What it is |
-| --- | --- |
-| [`docs/`](docs/) | Deliverables: [experiment spec](docs/01-experiment-spec.md), [architecture](docs/02-architecture.md), [project plan](docs/03-project-plan.md), and the guides below. Start at [`docs/README.md`](docs/README.md). |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | **Exact, verified Azure deployment steps.** |
-| [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) | Environment-variable reference. |
-| [`infra/`](infra/) | Bicep Infrastructure-as-Code for the Azure landing zone. |
-| [`scripts/`](scripts/) | One-command deploy/teardown scripts (PowerShell + Bash). |
-| [`src/`](src/) | Reference implementation: Foundry agent, multimodal ingestion, evaluation, API, frontend. |
-| [`tests/`](tests/) | Unit tests for the pure-logic modules (run with no Azure dependency). |
-
----
 
 ## Quick start
 
-### 1. Run the tests locally (no Azure required)
+The bundled dashboard requires only Python 3.12 or later.
+
+From the repository root:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-pytest -q
+python -m pip install -r backend\requirements.txt
+python -m backend.scripts.seed_sample_documents
+python -m backend.scripts.ingest
+python -m uvicorn backend.app.main:app --reload --port 8000
 ```
 
-The pure-logic modules — chunking, routing, confidence gating, and graceful
-degradation — are fully implemented and unit-tested with no Azure dependency.
+Open:
 
-### 2. Deploy to Azure
+- API: http://localhost:8000/api/documents
+- Metadata catalog: http://localhost:8000/
 
-One command (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for prerequisites,
-quota pre-checks, and troubleshooting):
+The catalog UI is `frontend\static-demo.html` and is served directly by FastAPI. No separate frontend toolchain is required.
 
-```powershell
-./scripts/deploy.ps1 -ResourceGroup rg-mmchat -Location eastus2
-python -m src.ingestion.pipeline --ensure-index
+## Microsoft Foundry
+
+Create a local `.env` file with the Foundry project and prompt-agent reference:
+
+```dotenv
+AI_PROVIDER=foundry
+FOUNDRY_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
+FOUNDRY_AGENT_NAME=<agent-name>
+FOUNDRY_AGENT_VERSION=<version>
+FOUNDRY_EXTRACTION_MODEL=gpt-5-mini
 ```
 
-Linux/macOS:
+Authenticate locally with Azure CLI. The application uses `DefaultAzureCredential` and does not store Azure credentials. Set `AI_PROVIDER=mock` to run with deterministic local metadata generation instead.
 
-```bash
-./scripts/deploy.sh -g rg-mmchat -l eastus2
-python -m src.ingestion.pipeline --ensure-index
-```
+## Demo storyline
 
-Then wire the Foundry connections/agent and run the API — see
-[`docs/DEPLOYMENT.md §7`](docs/DEPLOYMENT.md).
+1. Add representative documents to `sample-documents`.
+2. Run ingestion to extract text and generate metadata through Foundry.
+3. Optionally name a custom property and describe what the model should extract during upload.
+4. Review country, recency, review status, and recorded approval by knowledge area.
+5. Browse summaries, themes, classifications, and suggested tags.
+6. Filter or group the catalog to demonstrate metadata-driven discovery.
+7. Open a document detail view and follow its source-document link.
 
----
-
-## Architecture mapping
-
-| Concept | Location |
-| --- | --- |
-| Hosted orchestrator agent | `src/agent/agent.py` |
-| Model routing & confidence gating | `src/agent/routing.py` |
-| Grounded retrieval (AI Search) | `src/agent/tools/search_tool.py` |
-| SharePoint (Indexed) Knowledge Source | `src/ingestion/sharepoint_knowledge_source.py` |
-| Structured/metrics lane (Tableau) | `src/agent/tools/tableau_tool.py` |
-| Content Safety / Prompt Shields | `src/agent/safety.py` |
-| Graceful degradation & fallbacks | `src/agent/degradation.py` |
-| Multimodal ingestion | `src/ingestion/` |
-| Index schema (ACL/modality/freshness) | `src/ingestion/indexer.py` |
-| Foundry built-in Evaluations | `src/evaluation/evaluate.py` |
-| Landing zone | `infra/` |
-
----
-
-## Documentation
-
-| Guide | Purpose |
-| --- | --- |
-| [Experiment spec](docs/01-experiment-spec.md) | Goals, scope, and acceptance criteria |
-| [Architecture](docs/02-architecture.md) | Full technical design (architect-reviewed) |
-| [Project plan](docs/03-project-plan.md) | Phased delivery plan |
-| [Deployment guide](docs/DEPLOYMENT.md) | Verified, step-by-step Azure deployment |
-| [Configuration reference](docs/CONFIGURATION.md) | Every environment variable explained |
-
----
-
-## Contributing & security
-
-See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md),
-and [SECURITY.md](SECURITY.md).
-
-## License
-
-Licensed under the [MIT License](LICENSE).

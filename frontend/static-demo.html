@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Metadata Catalog</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+    body { margin: 0; background: var(--cp-bg); color: var(--cp-text); font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; }
+    * { box-sizing: border-box; }
+    main { max-width: 1500px; margin: 0 auto; padding: 28px; }
+    .hero, .panel, .metric { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 8px; }
+    .hero { padding: 28px; margin-bottom: 18px; border-left: 5px solid var(--cp-accent); }
+    .eyebrow { color: var(--cp-accent); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    h1 { margin: 0; font-size: 42px; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .area-health { margin-bottom: 18px; }
+    .area-health h2 { margin-top: 0; }
+    .area-health tbody tr { cursor: default; }
+    .metric { padding: 16px; }
+    .metric span { color: var(--cp-text-muted); display: block; }
+    .metric strong { display: block; font-size: 28px; margin-top: 8px; }
+    .success strong { color: var(--cp-success); }
+    .warning strong { color: var(--cp-warning); }
+    .danger strong { color: var(--cp-danger); }
+    .toolbar { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(6, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .view-controls { display: grid; grid-template-columns: repeat(2, minmax(160px, 220px)); justify-content: end; gap: 10px; margin-bottom: 18px; }
+    .control { display: grid; gap: 5px; color: var(--cp-text-muted); font-size: 13px; }
+    input, select { min-width: 0; width: 100%; padding: 9px 10px; border: 1px solid var(--cp-border-strong); border-radius: 4px; background: var(--cp-surface); color: var(--cp-text); font: inherit; }
+    .layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 18px; }
+    .panel { padding: 20px; overflow: hidden; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid var(--cp-border); padding: 10px; text-align: left; vertical-align: top; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: var(--cp-accent-soft); }
+    .pill { display: inline-block; border: 1px solid var(--cp-border); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+    .group-row th { background: var(--cp-surface-soft); color: var(--cp-accent); font-size: 13px; text-transform: uppercase; }
+    .empty { padding: 28px; text-align: center; color: var(--cp-text-muted); }
+    dl { display: grid; grid-template-columns: 120px 1fr; gap: 8px; }
+    dt { color: var(--cp-text-muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tags span { background: var(--cp-accent-soft); color: var(--cp-accent); border-radius: 999px; padding: 4px 10px; }
+    .document-link { color: var(--cp-link); font-weight: 600; }
+    .upload-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; margin-bottom: 18px; }
+    .dropzone { min-height: 112px; display: grid; place-content: center; gap: 6px; padding: 20px; border: 2px dashed var(--cp-border-strong); border-radius: 6px; text-align: center; cursor: pointer; transition: border-color .16s, background .16s; }
+    .dropzone:hover, .dropzone.dragging { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    .dropzone strong { font-size: 17px; }
+    .dropzone span, .upload-status { color: var(--cp-text-muted); font-size: 13px; }
+    .upload-actions { min-width: 210px; display: grid; gap: 10px; }
+    .custom-extraction { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(180px, 1fr) minmax(280px, 2fr); gap: 10px; }
+    button { border: 0; border-radius: 4px; padding: 10px 14px; background: var(--cp-accent); color: var(--cp-accent-fg); font: inherit; font-weight: 700; cursor: pointer; }
+    button:hover { background: var(--cp-accent-hover); }
+    button:disabled { cursor: wait; opacity: .55; }
+    .upload-status[data-state="error"] { color: var(--cp-danger); }
+    .upload-status[data-state="success"] { color: var(--cp-success); }
+    @media (max-width: 1400px) { .toolbar { grid-template-columns: repeat(3, 1fr); } .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) { main { padding: 14px; } h1 { font-size: 32px; } .cards, .toolbar, .custom-extraction { grid-template-columns: 1fr 1fr; } .toolbar .control:first-child, .custom-extraction .control:last-child { grid-column: 1 / -1; } .view-controls { grid-template-columns: 1fr 1fr; } .upload-panel { grid-template-columns: 1fr; } .upload-actions { min-width: 0; } .panel { overflow-x: auto; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">Document intelligence MVP</p>
+      <h1>Knowledge Metadata Catalog</h1>
+      <p>Explore AI-generated summaries, themes, tags, and classifications across a representative document library.</p>
+    </section>
+    <section class="panel upload-panel" aria-labelledby="uploadHeading">
+      <label class="dropzone" id="dropzone" for="fileInput">
+        <strong id="uploadHeading">Drop documents for batch processing</strong>
+        <span id="fileSummary">PDF, DOCX, or PPTX · up to 20 files · 20 MB each</span>
+        <input id="fileInput" type="file" accept=".pdf,.docx,.pptx" multiple hidden>
+      </label>
+      <div class="upload-actions">
+        <button id="processButton" type="button" disabled>Process documents</button>
+        <div class="upload-status" id="uploadStatus" role="status" aria-live="polite">Choose documents to begin.</div>
+      </div>
+      <div class="custom-extraction">
+        <label class="control">Custom tag<input id="customPropertyName" maxlength="60" placeholder="e.g. Claim type"></label>
+        <label class="control">Extraction instruction<input id="customPropertyInstruction" maxlength="300" placeholder="e.g. Identify the type of claim described"></label>
+      </div>
+    </section>
+    <section class="cards" id="cards"></section>
+    <section class="panel area-health" aria-labelledby="areaHealthHeading">
+      <h2 id="areaHealthHeading">Knowledge area health</h2>
+      <table>
+        <thead><tr><th>Knowledge area</th><th>Documents</th><th>Review status</th><th>Approval</th><th>Review recency</th></tr></thead>
+        <tbody id="areaRows"></tbody>
+      </table>
+    </section>
+    <section class="toolbar" aria-label="Catalog filters">
+      <label class="control">Search<input id="search" type="search" placeholder="Document, summary, or tag"></label>
+      <label class="control">Theme<select id="themeFilter"></select></label>
+      <label class="control">Tag<select id="tagFilter"></select></label>
+      <label class="control">Language<select id="languageFilter"></select></label>
+      <label class="control">Author<select id="authorFilter"></select></label>
+      <label class="control">Sentiment<select id="sentimentFilter"></select></label>
+      <label class="control">Country of origin<select id="countryFilter"></select></label>
+    </section>
+    <section class="view-controls" aria-label="Catalog display options">
+      <label class="control">Group by<select id="groupBy"><option value="">None</option><option value="metadataCategory">Category</option><option value="businessArea">Business area</option><option value="language">Language</option><option value="author">Author</option><option value="sentiment">Sentiment</option><option value="countryOfOrigin">Country of origin</option></select></label>
+      <label class="control">Custom column<select id="listField"></select></label>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <h2>Document catalog</h2>
+        <table>
+          <thead><tr><th>Document</th><th>Category</th><th>Business area</th><th>Language</th><th id="metadataColumnHeader">Sentiment</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <aside class="panel" id="details"><h2>Document details</h2><p>Select a document to inspect its generated metadata.</p></aside>
+    </section>
+  </main>
+  <script>
+    const state = { documents: [], selected: null };
+    const filters = ["themeFilter", "tagFilter", "languageFilter", "authorFilter", "sentimentFilter", "countryFilter"];
+
+    loadDocuments();
+    setupUpload();
+
+    function loadDocuments() {
+      return fetch("/api/documents").then(response => {
+      if (!response.ok) throw new Error("Unable to load documents");
+      return response.json();
+      }).then(initialize).catch(() => showEmpty("Run the FastAPI backend and ingestion to load metadata."));
+    }
+
+    function initialize(documents) {
+      state.documents = documents;
+      populateSelect("themeFilter", flatValues(documents, "themes"), "All themes");
+      populateSelect("tagFilter", flatValues(documents, "suggestedTags"), "All tags");
+      populateSelect("languageFilter", values(documents, "language"), "All languages");
+      populateSelect("authorFilter", values(documents, "author"), "All authors");
+      populateSelect("sentimentFilter", values(documents, "sentiment"), "All sentiments");
+      populateSelect("countryFilter", values(documents, "countryOfOrigin"), "All countries");
+      populateListFields(documents);
+      document.getElementById("search").oninput = render;
+      filters.forEach(id => document.getElementById(id).onchange = render);
+      document.getElementById("listField").onchange = render;
+      document.getElementById("groupBy").onchange = render;
+      render();
+    }
+
+    function setupUpload() {
+      const input = document.getElementById("fileInput");
+      const dropzone = document.getElementById("dropzone");
+      input.addEventListener("change", () => updateUploadSelection(input.files));
+      ["dragenter", "dragover"].forEach(type => dropzone.addEventListener(type, event => {
+        event.preventDefault();
+        dropzone.classList.add("dragging");
+      }));
+      ["dragleave", "drop"].forEach(type => dropzone.addEventListener(type, event => {
+        event.preventDefault();
+        dropzone.classList.remove("dragging");
+      }));
+      dropzone.addEventListener("drop", event => {
+        input.files = event.dataTransfer.files;
+        updateUploadSelection(input.files);
+      });
+      document.getElementById("processButton").addEventListener("click", processUpload);
+    }
+
+    function updateUploadSelection(files) {
+      const count = files.length;
+      document.getElementById("fileSummary").textContent = count
+        ? `${count} document${count === 1 ? "" : "s"} selected`
+        : "PDF, DOCX, or PPTX · up to 20 files · 20 MB each";
+      document.getElementById("processButton").disabled = !count;
+      setUploadStatus(count ? "Ready to process." : "Choose documents to begin.");
+    }
+
+    async function processUpload() {
+      const input = document.getElementById("fileInput");
+      const button = document.getElementById("processButton");
+      if (!input.files.length) return;
+      const body = new FormData();
+      [...input.files].forEach(file => body.append("files", file));
+      body.append("custom_property_name", document.getElementById("customPropertyName").value.trim());
+      body.append("custom_property_instruction", document.getElementById("customPropertyInstruction").value.trim());
+      button.disabled = true;
+      setUploadStatus(`Processing ${input.files.length} document${input.files.length === 1 ? "" : "s"}…`);
+      try {
+        const response = await fetch("/api/documents/upload", { method: "POST", body });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Upload failed");
+        input.value = "";
+        document.getElementById("fileSummary").textContent = "PDF, DOCX, or PPTX · up to 20 files · 20 MB each";
+        setUploadStatus(`${result.uploaded.length} processed. Catalog refreshed.`, "success");
+        await loadDocuments();
+      } catch (error) {
+        button.disabled = false;
+        setUploadStatus(error.message, "error");
+      }
+    }
+
+    function setUploadStatus(message, state = "") {
+      const status = document.getElementById("uploadStatus");
+      status.textContent = message;
+      status.dataset.state = state;
+    }
+
+    function render() {
+      const query = document.getElementById("search").value.trim().toLowerCase();
+      const selected = Object.fromEntries(filters.map(id => [id, document.getElementById(id).value]));
+      const documents = state.documents.filter(document => {
+        const searchable = [document.documentName, document.summary, document.countryOfOrigin, ...Object.entries(document.customMetadata || {}).flat(), ...(document.themes || []), ...(document.suggestedTags || [])].join(" ").toLowerCase();
+        return (!query || searchable.includes(query))
+          && (!selected.themeFilter || document.themes.includes(selected.themeFilter))
+          && (!selected.tagFilter || document.suggestedTags.includes(selected.tagFilter))
+          && (!selected.languageFilter || document.language === selected.languageFilter)
+          && (!selected.authorFilter || document.author === selected.authorFilter)
+          && (!selected.sentimentFilter || document.sentiment === selected.sentimentFilter)
+          && (!selected.countryFilter || document.countryOfOrigin === selected.countryFilter);
+      });
+      renderMetrics(documents);
+      renderKnowledgeAreas(documents);
+      renderRows(documents, document.getElementById("groupBy").value);
+      if (!state.selected || !documents.includes(state.selected)) show(documents[0]);
+    }
+
+    function renderMetrics(documents) {
+      const metrics = [
+        ["Showing", documents.length],
+        ["Themes", flatValues(documents, "themes").length],
+        ["Tags", flatValues(documents, "suggestedTags").length],
+        ["Categories", values(documents, "metadataCategory").length]
+      ];
+      const container = document.getElementById("cards");
+      container.replaceChildren(...metrics.map(([label, value]) => element("article", { className: "metric" }, element("span", {}, label), element("strong", {}, String(value)))));
+    }
+
+    function renderKnowledgeAreas(documents) {
+      const grouped = Object.groupBy(documents, document => document.businessArea || "Unassigned");
+      const rows = Object.entries(grouped).sort(([left], [right]) => left.localeCompare(right)).map(([area, items]) => {
+        const ages = items.map(item => item.recencyDays).filter(Number.isInteger);
+        const recency = ages.length ? `Oldest review: ${Math.max(...ages)} days` : "Not recorded";
+        return element("tr", {},
+          element("th", { scope: "row" }, area),
+          element("td", {}, String(items.length)),
+          element("td", {}, summarize(items, "reviewStatus")),
+          element("td", {}, summarize(items, "approvalStatus")),
+          element("td", {}, recency));
+      });
+      document.getElementById("areaRows").replaceChildren(...rows);
+    }
+
+    function summarize(documents, key) {
+      const counts = Object.groupBy(documents, document => document[key] || "Not Recorded");
+      return Object.entries(counts).map(([status, items]) => `${items.length} ${status}`).join(" · ");
+    }
+
+    function renderRows(documents, groupKey) {
+      const rows = document.getElementById("rows");
+      const listField = document.getElementById("listField").value;
+      document.getElementById("metadataColumnHeader").textContent = listFieldLabel(listField);
+      rows.replaceChildren();
+      if (!documents.length) return showEmpty("No documents match the selected filters.");
+      const groups = groupKey ? Object.groupBy(documents, document => document[groupKey] || "Unknown") : { "": documents };
+      Object.entries(groups).sort(([left], [right]) => left.localeCompare(right)).forEach(([group, items]) => {
+        if (groupKey) {
+          const heading = element("tr", { className: "group-row" }, element("th", { colSpan: 5 }, `${group} (${items.length})`));
+          rows.append(heading);
+        }
+        items.forEach(document => {
+          const row = element("tr", { role: "button", tabIndex: 0, "aria-label": `Open details for ${document.documentName}` },
+            element("td", {}, document.documentName),
+            element("td", {}, element("span", { className: "pill" }, document.metadataCategory)),
+            element("td", {}, document.businessArea),
+            element("td", {}, document.language),
+            element("td", {}, listFieldValue(document, listField)));
+          row.addEventListener("click", () => show(document));
+          row.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              show(document);
+            }
+          });
+          rows.append(row);
+        });
+      });
+    }
+
+    function show(details) {
+      state.selected = details || null;
+      const panel = document.getElementById("details");
+      panel.replaceChildren(element("h2", {}, "Document details"));
+      if (!details) return panel.append(element("p", {}, "No document selected."));
+      const link = element("a", { className: "document-link", href: details.metadataLink, target: "_blank", rel: "noreferrer" }, details.documentName);
+      panel.append(element("h3", {}, link), element("p", {}, details.summary));
+      const list = element("dl");
+      const recency = Number.isInteger(details.recencyDays) ? `${details.recencyDays} days since review` : "Not recorded";
+      [["Author", details.author], ["Language", details.language], ["Sentiment", details.sentiment], ["Country of origin", details.countryOfOrigin || "Unknown"], ["Audience", details.audience], ["Business area", details.businessArea], ["Category", details.metadataCategory], ["Review status", details.reviewStatus], ["Approval", details.approvalStatus], ["Recency", recency], ...Object.entries(details.customMetadata || {})].forEach(([label, value]) => list.append(element("dt", {}, label), element("dd", {}, value)));
+      panel.append(list, element("h3", {}, "Themes"), tagList(details.themes), element("h3", {}, "Suggested tags"), tagList(details.suggestedTags));
+    }
+
+    function showEmpty(message) {
+      const rows = document.getElementById("rows");
+      rows.replaceChildren(element("tr", {}, element("td", { colSpan: 5, className: "empty" }, message)));
+    }
+
+    function populateSelect(id, options, label) {
+      const select = document.getElementById(id);
+      select.replaceChildren(element("option", { value: "" }, label), ...options.map(value => element("option", { value }, value)));
+    }
+
+    function populateListFields(documents) {
+      const select = document.getElementById("listField");
+      const previous = select.value;
+      const excluded = new Set(["documentName", "summary", "themes", "suggestedTags", "customMetadata", "metadataLink", "sourcePath"]);
+      const standard = [...new Set(documents.flatMap(document => Object.entries(document)
+        .filter(([key, value]) => !excluded.has(key) && ["string", "number", "boolean"].includes(typeof value))
+        .map(([key]) => key)))].sort((left, right) => listFieldLabel(left).localeCompare(listFieldLabel(right)));
+      const custom = [...new Set(documents.flatMap(document => Object.keys(document.customMetadata || {})))].sort();
+      const options = [
+        ...standard.map(value => element("option", { value }, listFieldLabel(value))),
+        ...custom.map(name => element("option", { value: `custom:${name}` }, name))
+      ];
+      select.replaceChildren(...options);
+      const available = options.map(option => option.value);
+      select.value = available.includes(previous) ? previous : custom.length ? `custom:${custom[0]}` : "sentiment";
+    }
+
+    function listFieldLabel(field) {
+      if (field.startsWith("custom:")) return field.slice(7);
+      return {
+        fileType: "File type",
+        metadataCategory: "Category",
+        businessArea: "Business area",
+        sentiment: "Sentiment",
+        author: "Author",
+        language: "Language",
+        audience: "Audience",
+        countryOfOrigin: "Country of origin",
+        approvalStatus: "Approval",
+        reviewStatus: "Review status",
+        recencyDays: "Review recency",
+        extractedCharacters: "Extracted characters"
+      }[field] || field.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, character => character.toUpperCase());
+    }
+
+    function listFieldValue(document, field) {
+      if (field.startsWith("custom:")) return document.customMetadata?.[field.slice(7)] || "Unknown";
+      if (field === "recencyDays") return Number.isInteger(document.recencyDays) ? `${document.recencyDays} days` : "Not recorded";
+      return document[field] || "Unknown";
+    }
+
+    function values(documents, key) { return [...new Set(documents.map(document => document[key]).filter(Boolean))].sort(); }
+    function flatValues(documents, key) { return [...new Set(documents.flatMap(document => document[key] || []))].sort(); }
+    function tagList(values) { return element("div", { className: "tags" }, ...(values || []).map(value => element("span", {}, value))); }
+    function element(tag, attributes = {}, ...children) {
+      const node = window.document.createElement(tag);
+      Object.entries(attributes).forEach(([key, value]) => key in node ? node[key] = value : node.setAttribute(key, value));
+      node.append(...children);
+      return node;
+    }
+  </script>
+</body>
+</html>

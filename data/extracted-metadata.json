@@ -1,0 +1,616 @@
+[
+  {
+    "documentName": "01-beneficiary-change-form-guide.docx",
+    "fileType": "DOCX",
+    "summary": "Beneficiary Change Form Guide. Business area: Policy Servicing. Audience: Customer. Content owner: Content Owner 02. Author: Sample Author 01. Language: English. Country of origin: United States. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 45....",
+    "themes": [
+      "Policy Servicing"
+    ],
+    "suggestedTags": [
+      "Customer",
+      "Guide",
+      "Policy Servicing"
+    ],
+    "language": "English",
+    "author": "Sample Author 01",
+    "sentiment": "Positive",
+    "businessArea": "Policy Servicing",
+    "audience": "Customer",
+    "metadataCategory": "Guide",
+    "countryOfOrigin": "United States",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 45,
+    "metadataLink": "/api/documents/01-beneficiary-change-form-guide.docx",
+    "sourcePath": "sample-documents/01-beneficiary-change-form-guide.docx",
+    "extractedCharacters": 400
+  },
+  {
+    "documentName": "01-example-company-benefits-overview-faq.pdf",
+    "fileType": "PDF",
+    "summary": "Example Company Benefits Overview FAQ. Business area: Benefits. Metadata category: FAQ. Theme: Benefits Navigation. Author: Sample Author 10. Language: English. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 42. Frequently asked questions for...",
+    "themes": [
+      "Benefits Navigation"
+    ],
+    "suggestedTags": [
+      "Benefits",
+      "Benefits Navigation",
+      "FAQ",
+      "Internal Operations"
+    ],
+    "language": "English",
+    "author": "Sample Author 10",
+    "sentiment": "Positive",
+    "businessArea": "Benefits",
+    "audience": "Internal Operations",
+    "metadataCategory": "FAQ",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 42,
+    "metadataLink": "/api/documents/01-example-company-benefits-overview-faq.pdf",
+    "sourcePath": "sample-documents/01-example-company-benefits-overview-faq.pdf",
+    "extractedCharacters": 354
+  },
+  {
+    "documentName": "02-advisor-portal-search-playbook.pptx",
+    "fileType": "PPTX",
+    "summary": "Advisor Portal Search Playbook Advisor Portal Search Playbook. Business area: Advisor Experience. Audience: Advisor. Content owner: Content Owner 03. Author: Sample Author 02. Language: Spanish. Country of origin: Spain. Sentiment: Positive. Approval status: Approved. Last...",
+    "themes": [
+      "Advisor Experience"
+    ],
+    "suggestedTags": [
+      "Advisor",
+      "Advisor Experience",
+      "Guide"
+    ],
+    "language": "Spanish",
+    "author": "Sample Author 02",
+    "sentiment": "Positive",
+    "businessArea": "Advisor Experience",
+    "audience": "Advisor",
+    "metadataCategory": "Guide",
+    "countryOfOrigin": "Spain",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 130,
+    "metadataLink": "/api/documents/02-advisor-portal-search-playbook.pptx",
+    "sourcePath": "sample-documents/02-advisor-portal-search-playbook.pptx",
+    "extractedCharacters": 437
+  },
+  {
+    "documentName": "02-claims-submission-procedure.pdf",
+    "fileType": "PDF",
+    "summary": "Claims Submission Procedure. Business area: Claims. Metadata category: Procedure. Theme: Claims Intake. Author: Sample Author 11. Language: English. Sentiment: Neutral. Approval status: Pending. Last reviewed age days: 255. Step by step claims intake workflow for internal...",
+    "themes": [
+      "Claims",
+      "Claims Intake"
+    ],
+    "suggestedTags": [
+      "Claims",
+      "Claims Intake",
+      "Internal Operations",
+      "Procedure"
+    ],
+    "language": "English",
+    "author": "Sample Author 11",
+    "sentiment": "Neutral",
+    "businessArea": "Claims",
+    "audience": "Internal Operations",
+    "metadataCategory": "Procedure",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Pending",
+    "recencyDays": 255,
+    "metadataLink": "/api/documents/02-claims-submission-procedure.pdf",
+    "sourcePath": "sample-documents/02-claims-submission-procedure.pdf",
+    "extractedCharacters": 305
+  },
+  {
+    "documentName": "03-advisor-knowledge-playbook.docx",
+    "fileType": "DOCX",
+    "summary": "Advisor Knowledge Playbook. Business area: Advisor Experience. Metadata category: Guide. Theme: Advisor Enablement. Author: Sample Author 12. Language: English. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 92. Advisor guidance for finding knowledge...",
+    "themes": [
+      "Advisor Enablement",
+      "Advisor Experience"
+    ],
+    "suggestedTags": [
+      "Advisor",
+      "Advisor Enablement",
+      "Advisor Experience",
+      "Guide"
+    ],
+    "language": "English",
+    "author": "Sample Author 12",
+    "sentiment": "Positive",
+    "businessArea": "Advisor Experience",
+    "audience": "Advisor",
+    "metadataCategory": "Guide",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 92,
+    "metadataLink": "/api/documents/03-advisor-knowledge-playbook.docx",
+    "sourcePath": "sample-documents/03-advisor-knowledge-playbook.docx",
+    "extractedCharacters": 324
+  },
+  {
+    "documentName": "03-claims-intake-procedure.pdf",
+    "fileType": "PDF",
+    "summary": "Claims Intake Procedure. Business area: Claims. Audience: Internal Operations. Content owner: Unassigned. Language: English. Country of origin: Canada. Sentiment: Negative. Approval status: Review Required. Last reviewed age days: 410. The intake queue has repeated handoff...",
+    "themes": [
+      "Claims"
+    ],
+    "suggestedTags": [
+      "Claims",
+      "Internal Operations",
+      "Procedure"
+    ],
+    "language": "English",
+    "author": "Unknown",
+    "sentiment": "Negative",
+    "businessArea": "Claims",
+    "audience": "Internal Operations",
+    "metadataCategory": "Procedure",
+    "countryOfOrigin": "Canada",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Review Required",
+    "recencyDays": 410,
+    "metadataLink": "/api/documents/03-claims-intake-procedure.pdf",
+    "sourcePath": "sample-documents/03-claims-intake-procedure.pdf",
+    "extractedCharacters": 387
+  },
+  {
+    "documentName": "04-legacy-policy-servicing-notes.docx",
+    "fileType": "DOCX",
+    "summary": "Legacy Policy Servicing Notes. Business area: Policy Servicing. Metadata category: Reference. Theme: Legacy Content. Author: Unassigned. Language: English. Sentiment: Negative. Approval status: Not Recorded. Last reviewed age days: 640. Older policy servicing notes that may...",
+    "themes": [
+      "Legacy Content",
+      "Policy Servicing"
+    ],
+    "suggestedTags": [
+      "Internal Operations",
+      "Legacy Content",
+      "Policy Servicing",
+      "Reference"
+    ],
+    "language": "English",
+    "author": "Unassigned",
+    "sentiment": "Negative",
+    "businessArea": "Policy Servicing",
+    "audience": "Internal Operations",
+    "metadataCategory": "Reference",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Not Recorded",
+    "recencyDays": 640,
+    "metadataLink": "/api/documents/04-legacy-policy-servicing-notes.docx",
+    "sourcePath": "sample-documents/04-legacy-policy-servicing-notes.docx",
+    "extractedCharacters": 342
+  },
+  {
+    "documentName": "04-retirement-rollover-faq.docx",
+    "fileType": "DOCX",
+    "summary": "Retirement Rollover FAQ. Business area: Retirement. Audience: Customer. Content owner: Content Owner 01. Author: Sample Author 03. Language: French. Country of origin: France. Sentiment: Neutral. Approval status: Pending. Last reviewed age days: 220. Reponses aux questions...",
+    "themes": [
+      "Retirement"
+    ],
+    "suggestedTags": [
+      "Customer",
+      "FAQ",
+      "Retirement"
+    ],
+    "language": "French",
+    "author": "Sample Author 03",
+    "sentiment": "Neutral",
+    "businessArea": "Retirement",
+    "audience": "Customer",
+    "metadataCategory": "FAQ",
+    "countryOfOrigin": "France",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Pending",
+    "recencyDays": 220,
+    "metadataLink": "/api/documents/04-retirement-rollover-faq.docx",
+    "sourcePath": "sample-documents/04-retirement-rollover-faq.docx",
+    "extractedCharacters": 391
+  },
+  {
+    "documentName": "05-plan-pricing-reference.pptx",
+    "fileType": "PPTX",
+    "summary": "Plan Pricing Reference Plan Pricing Reference. Business area: Pricing. Metadata category: Reference. Theme: Pricing. Author: Finance Operations. Language: English. Sentiment: Neutral. Approval status: Restricted. Last reviewed age days: 120. Confidential pricing, fee, and...",
+    "themes": [
+      "Pricing"
+    ],
+    "suggestedTags": [
+      "Internal Operations",
+      "Pricing",
+      "Reference"
+    ],
+    "language": "English",
+    "author": "Finance Operations",
+    "sentiment": "Neutral",
+    "businessArea": "Pricing",
+    "audience": "Internal Operations",
+    "metadataCategory": "Reference",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Restricted",
+    "recencyDays": 120,
+    "metadataLink": "/api/documents/05-plan-pricing-reference.pptx",
+    "sourcePath": "sample-documents/05-plan-pricing-reference.pptx",
+    "extractedCharacters": 317
+  },
+  {
+    "documentName": "05-pricing-exception-matrix.pptx",
+    "fileType": "PPTX",
+    "summary": "Pricing Exception Matrix Pricing Exception Matrix. Business area: Pricing. Audience: Internal Operations. Content owner: Content Owner 02. Author: Sample Author 04. Language: English. Country of origin: United Kingdom. Sentiment: Neutral. Approval status: Approved. Last...",
+    "themes": [
+      "Pricing"
+    ],
+    "suggestedTags": [
+      "Internal Operations",
+      "Presentation",
+      "Pricing"
+    ],
+    "language": "English",
+    "author": "Sample Author 04",
+    "sentiment": "Neutral",
+    "businessArea": "Pricing",
+    "audience": "Internal Operations",
+    "metadataCategory": "Presentation",
+    "countryOfOrigin": "United Kingdom",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 30,
+    "metadataLink": "/api/documents/05-pricing-exception-matrix.pptx",
+    "sourcePath": "sample-documents/05-pricing-exception-matrix.pptx",
+    "extractedCharacters": 438
+  },
+  {
+    "documentName": "06-privacy-and-compliance-overview.pdf",
+    "fileType": "PDF",
+    "summary": "Privacy and Compliance Overview. Business area: Compliance. Audience: Internal Operations. Content owner: Content Owner 03. Author: Sample Author 05. Language: German. Country of origin: Germany. Sentiment: Negative. Approval status: Expired. Last reviewed age days: 500....",
+    "themes": [
+      "Compliance"
+    ],
+    "suggestedTags": [
+      "Compliance",
+      "Internal Operations",
+      "Reference"
+    ],
+    "language": "German",
+    "author": "Sample Author 05",
+    "sentiment": "Negative",
+    "businessArea": "Compliance",
+    "audience": "Internal Operations",
+    "metadataCategory": "Reference",
+    "countryOfOrigin": "Germany",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Expired",
+    "recencyDays": 500,
+    "metadataLink": "/api/documents/06-privacy-and-compliance-overview.pdf",
+    "sourcePath": "sample-documents/06-privacy-and-compliance-overview.pdf",
+    "extractedCharacters": 414
+  },
+  {
+    "documentName": "06-privacy-compliance-checklist.pdf",
+    "fileType": "PDF",
+    "summary": "Privacy Compliance Checklist. Business area: Compliance. Metadata category: Checklist. Theme: Privacy. Author: Compliance Office. Language: English. Sentiment: Neutral. Approval status: Approved. Last reviewed age days: 375. Regulatory privacy checklist covering retention,...",
+    "themes": [
+      "Compliance",
+      "Privacy"
+    ],
+    "suggestedTags": [
+      "Checklist",
+      "Compliance",
+      "Internal Operations",
+      "Privacy"
+    ],
+    "language": "English",
+    "author": "Compliance Office",
+    "sentiment": "Neutral",
+    "businessArea": "Compliance",
+    "audience": "Internal Operations",
+    "metadataCategory": "Checklist",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Approved",
+    "recencyDays": 375,
+    "metadataLink": "/api/documents/06-privacy-compliance-checklist.pdf",
+    "sourcePath": "sample-documents/06-privacy-compliance-checklist.pdf",
+    "extractedCharacters": 329
+  },
+  {
+    "documentName": "07-life-insurance-product-basics.docx",
+    "fileType": "DOCX",
+    "summary": "Life Insurance Product Basics. Business area: Insurance. Audience: Customer. Content owner: Unassigned. Author: Sample Author 06. Language: Portuguese. Country of origin: Brazil. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 80. Apresenta conceitos...",
+    "themes": [
+      "Insurance"
+    ],
+    "suggestedTags": [
+      "Customer",
+      "Education",
+      "Insurance"
+    ],
+    "language": "Portuguese",
+    "author": "Sample Author 06",
+    "sentiment": "Positive",
+    "businessArea": "Insurance",
+    "audience": "Customer",
+    "metadataCategory": "Education",
+    "countryOfOrigin": "Brazil",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 80,
+    "metadataLink": "/api/documents/07-life-insurance-product-basics.docx",
+    "sourcePath": "sample-documents/07-life-insurance-product-basics.docx",
+    "extractedCharacters": 395
+  },
+  {
+    "documentName": "07-spanish-benefits-quick-guide.docx",
+    "fileType": "DOCX",
+    "summary": "Spanish Benefits Quick Guide. Business area: Benefits. Metadata category: Guide. Theme: Multilingual Support. Author: Employee Experience. Language: Spanish. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 60. Spanish-language benefits overview for...",
+    "themes": [
+      "Multilingual Support"
+    ],
+    "suggestedTags": [
+      "Benefits",
+      "Guide",
+      "Internal Operations",
+      "Multilingual Support"
+    ],
+    "language": "Spanish",
+    "author": "Employee Experience",
+    "sentiment": "Positive",
+    "businessArea": "Benefits",
+    "audience": "Internal Operations",
+    "metadataCategory": "Guide",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 60,
+    "metadataLink": "/api/documents/07-spanish-benefits-quick-guide.docx",
+    "sourcePath": "sample-documents/07-spanish-benefits-quick-guide.docx",
+    "extractedCharacters": 317
+  },
+  {
+    "documentName": "08-contact-center-escalation-guide.pptx",
+    "fileType": "PPTX",
+    "summary": "Contact Center Escalation Guide Contact Center Escalation Guide. Business area: Policy Servicing. Audience: Internal Operations. Content owner: Content Owner 01. Language: English. Country of origin: Canada. Sentiment: Negative. Approval status: Review Required. Last reviewed...",
+    "themes": [
+      "Policy Servicing"
+    ],
+    "suggestedTags": [
+      "Guide",
+      "Internal Operations",
+      "Policy Servicing"
+    ],
+    "language": "English",
+    "author": "Unknown",
+    "sentiment": "Negative",
+    "businessArea": "Policy Servicing",
+    "audience": "Internal Operations",
+    "metadataCategory": "Guide",
+    "countryOfOrigin": "Canada",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Review Required",
+    "recencyDays": 370,
+    "metadataLink": "/api/documents/08-contact-center-escalation-guide.pptx",
+    "sourcePath": "sample-documents/08-contact-center-escalation-guide.pptx",
+    "extractedCharacters": 436
+  },
+  {
+    "documentName": "08-retirement-education-article.pptx",
+    "fileType": "PPTX",
+    "summary": "Retirement Education Article Retirement Education Article. Business area: Retirement. Metadata category: Education. Theme: Financial Education. Author: Knowledge Team. Language: English. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 188. Educational...",
+    "themes": [
+      "Advisor Experience",
+      "Financial Education",
+      "Retirement"
+    ],
+    "suggestedTags": [
+      "Advisor",
+      "Advisor Experience",
+      "Education",
+      "Financial Education",
+      "Retirement"
+    ],
+    "language": "English",
+    "author": "Knowledge Team",
+    "sentiment": "Positive",
+    "businessArea": "Retirement",
+    "audience": "Advisor",
+    "metadataCategory": "Education",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Approved",
+    "recencyDays": 188,
+    "metadataLink": "/api/documents/08-retirement-education-article.pptx",
+    "sourcePath": "sample-documents/08-retirement-education-article.pptx",
+    "extractedCharacters": 357
+  },
+  {
+    "documentName": "09-contact-center-escalation-matrix.pdf",
+    "fileType": "PDF",
+    "summary": "Contact Center Escalation Matrix. Business area: Operations. Metadata category: Matrix. Theme: Escalation. Author: Operations SME. Language: English. Sentiment: Neutral. Approval status: Pending. Last reviewed age days: 330. Escalation matrix for unresolved servicing...",
+    "themes": [
+      "Escalation"
+    ],
+    "suggestedTags": [
+      "Escalation",
+      "Internal Operations",
+      "Matrix",
+      "Operations"
+    ],
+    "language": "English",
+    "author": "Operations SME",
+    "sentiment": "Neutral",
+    "businessArea": "Operations",
+    "audience": "Internal Operations",
+    "metadataCategory": "Matrix",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Pending",
+    "recencyDays": 330,
+    "metadataLink": "/api/documents/09-contact-center-escalation-matrix.pdf",
+    "sourcePath": "sample-documents/09-contact-center-escalation-matrix.pdf",
+    "extractedCharacters": 311
+  },
+  {
+    "documentName": "09-investment-education-landing-page.pdf",
+    "fileType": "PDF",
+    "summary": "Investment Education Landing Page. Business area: Wealth. Audience: Customer. Content owner: Content Owner 02. Author: Sample Author 07. Language: Spanish. Country of origin: Mexico. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 160. Contenido...",
+    "themes": [
+      "Wealth"
+    ],
+    "suggestedTags": [
+      "Customer",
+      "Education",
+      "Wealth"
+    ],
+    "language": "Spanish",
+    "author": "Sample Author 07",
+    "sentiment": "Positive",
+    "businessArea": "Wealth",
+    "audience": "Customer",
+    "metadataCategory": "Education",
+    "countryOfOrigin": "Mexico",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 160,
+    "metadataLink": "/api/documents/09-investment-education-landing-page.pdf",
+    "sourcePath": "sample-documents/09-investment-education-landing-page.pdf",
+    "extractedCharacters": 405
+  },
+  {
+    "documentName": "10-knowledge-metadata-library-model.docx",
+    "fileType": "DOCX",
+    "summary": "Knowledge Metadata Library Model. Business area: Knowledge Management. Metadata category: Taxonomy. Theme: Metadata Library. Author: Information Architecture. Language: English. Sentiment: Neutral. Approval status: Approved. Last reviewed age days: 15. Simulated metadata...",
+    "themes": [
+      "Forms",
+      "Metadata Library"
+    ],
+    "suggestedTags": [
+      "Forms",
+      "Internal Operations",
+      "Knowledge Management",
+      "Metadata Library",
+      "Taxonomy"
+    ],
+    "language": "English",
+    "author": "Information Architecture",
+    "sentiment": "Neutral",
+    "businessArea": "Knowledge Management",
+    "audience": "Internal Operations",
+    "metadataCategory": "Taxonomy",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 15,
+    "metadataLink": "/api/documents/10-knowledge-metadata-library-model.docx",
+    "sourcePath": "sample-documents/10-knowledge-metadata-library-model.docx",
+    "extractedCharacters": 393
+  },
+  {
+    "documentName": "10-tax-forms-knowledge-article.docx",
+    "fileType": "DOCX",
+    "summary": "Tax Forms Knowledge Article. Business area: Forms. Audience: Customer. Content owner: Content Owner 03. Author: Sample Author 08. Language: French. Country of origin: Canada. Sentiment: Neutral. Approval status: Review Required. Last reviewed age days: 395. Guide des...",
+    "themes": [
+      "Forms"
+    ],
+    "suggestedTags": [
+      "Customer",
+      "Forms",
+      "Guide"
+    ],
+    "language": "French",
+    "author": "Sample Author 08",
+    "sentiment": "Neutral",
+    "businessArea": "Forms",
+    "audience": "Customer",
+    "metadataCategory": "Guide",
+    "countryOfOrigin": "Canada",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Review Required",
+    "recencyDays": 395,
+    "metadataLink": "/api/documents/10-tax-forms-knowledge-article.docx",
+    "sourcePath": "sample-documents/10-tax-forms-knowledge-article.docx",
+    "extractedCharacters": 402
+  },
+  {
+    "documentName": "11-advisor-compliance-checklist.pptx",
+    "fileType": "PPTX",
+    "summary": "Advisor Compliance Checklist Advisor Compliance Checklist. Business area: Compliance. Audience: Advisor. Content owner: Unassigned. Author: Sample Author 09. Language: English. Country of origin: India. Sentiment: Neutral. Approval status: Pending. Last reviewed age days:...",
+    "themes": [
+      "Advisor Experience",
+      "Compliance"
+    ],
+    "suggestedTags": [
+      "Advisor",
+      "Advisor Experience",
+      "Checklist",
+      "Compliance"
+    ],
+    "language": "English",
+    "author": "Sample Author 09",
+    "sentiment": "Neutral",
+    "businessArea": "Compliance",
+    "audience": "Advisor",
+    "metadataCategory": "Checklist",
+    "countryOfOrigin": "India",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Pending",
+    "recencyDays": 250,
+    "metadataLink": "/api/documents/11-advisor-compliance-checklist.pptx",
+    "sourcePath": "sample-documents/11-advisor-compliance-checklist.pptx",
+    "extractedCharacters": 410
+  },
+  {
+    "documentName": "12-death-claims-customer-journey.pdf",
+    "fileType": "PDF",
+    "summary": "Death Claims Customer Journey. Business area: Claims. Audience: Customer. Content owner: Content Owner 01. Language: English. Country of origin: United States. Sentiment: Positive. Approval status: Approved. Last reviewed age days: 25. Provides compassionate guidance for...",
+    "themes": [
+      "Claims"
+    ],
+    "suggestedTags": [
+      "Claims",
+      "Customer",
+      "Form"
+    ],
+    "language": "English",
+    "author": "Unknown",
+    "sentiment": "Positive",
+    "businessArea": "Claims",
+    "audience": "Customer",
+    "metadataCategory": "Form",
+    "countryOfOrigin": "United States",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 25,
+    "metadataLink": "/api/documents/12-death-claims-customer-journey.pdf",
+    "sourcePath": "sample-documents/12-death-claims-customer-journey.pdf",
+    "extractedCharacters": 369
+  }
+]
