@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -8,6 +9,7 @@ from backend.app.services.extractors import extract_labeled_value, extract_text
 from backend.app.services.lifecycle import lifecycle_metadata
 
 ROOT = Path(__file__).resolve().parents[2]
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Document Metadata Agent MVP")
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx"}
@@ -26,10 +28,15 @@ def documents() -> list[dict]:
     documents = load_documents(DATA_PATH)
     for document in documents:
         document.setdefault("customMetadata", {})
-        path = SAMPLE_DOCS / document["documentName"]
-        text = extract_text(path) if path.is_file() else ""
-        document.setdefault("countryOfOrigin", extract_labeled_value(text, "Country of origin") or "Unknown")
-        if "reviewStatus" not in document:
+        needs_country = "countryOfOrigin" not in document
+        needs_lifecycle = any(field not in document for field in ("reviewStatus", "approvalStatus", "recencyDays"))
+        text = ""
+        if needs_country or needs_lifecycle:
+            path = SAMPLE_DOCS / document["documentName"]
+            text = extract_text(path) if path.is_file() else ""
+        if needs_country:
+            document["countryOfOrigin"] = extract_labeled_value(text, "Country of origin") or "Unknown"
+        if needs_lifecycle:
             document.update(lifecycle_metadata(text))
     return documents
 
@@ -108,11 +115,11 @@ async def upload_documents(
             DATA_PATH.unlink(missing_ok=True)
         else:
             DATA_PATH.write_bytes(metadata_backup)
-        raise HTTPException(status_code=500, detail=f"Document processing failed: {error}") from error
+        logger.exception("Document processing failed")
+        raise HTTPException(status_code=500, detail="Document processing failed") from error
 
     return {
         "status": "ok",
         "uploaded": [name for name, _ in uploads],
         "documents": len(documents),
     }
-

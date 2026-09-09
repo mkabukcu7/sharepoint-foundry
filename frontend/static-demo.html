@@ -321,13 +321,19 @@
           rows.append(heading);
         }
         items.forEach(document => {
-          const row = element("tr", {},
+          const row = element("tr", { role: "button", tabIndex: 0, "aria-label": `Open details for ${document.documentName}` },
             element("td", {}, document.documentName),
             element("td", {}, element("span", { className: "pill" }, document.metadataCategory)),
             element("td", {}, document.businessArea),
             element("td", {}, document.language),
             element("td", {}, listFieldValue(document, listField)));
           row.addEventListener("click", () => show(document));
+          row.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              show(document);
+            }
+          });
           rows.append(row);
         });
       });
@@ -409,4 +415,3 @@
   </script>
 </body>
 </html>
-

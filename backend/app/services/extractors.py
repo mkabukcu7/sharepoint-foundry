@@ -58,7 +58,8 @@ def _extract_pptx(path: Path) -> str:
 def _extract_simple_pdf(path: Path) -> str:
     raw = path.read_bytes().decode("latin-1", errors="ignore")
     parts = re.findall(r"\((.*?)\)\s*Tj", raw)
+    for array in re.findall(r"\[(.*?)\]\s*TJ", raw, flags=re.DOTALL):
+        parts.extend(re.findall(r"\((.*?)\)", array))
     if parts:
         return " ".join(part.replace("\\\\(", "(").replace("\\\\)", ")") for part in parts)
-    return re.sub(r"\s+", " ", raw)
-
+    raise ValueError(f"Unsupported PDF text format: {path.name}")

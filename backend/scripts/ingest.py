@@ -15,6 +15,8 @@ def run_ingestion(
     document_names: set[str] | None = None,
     custom_property: tuple[str, str] | None = None,
 ) -> list[dict]:
+    if document_names is None and source_dir.resolve() != SAMPLE_DOCS.resolve():
+        raise ValueError("--source is limited to sample-documents so generated links remain servable")
     provider = get_provider()
     documents = [] if document_names is None else [
         document for document in load_documents(data_path)
@@ -51,7 +53,7 @@ def run_ingestion(
     return documents
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract document metadata for the Knowledge Metadata Agent MVP.")
-    parser.add_argument("--source", type=Path, default=SAMPLE_DOCS, help="Folder containing PDF, DOCX, and PPTX files.")
+    parser.add_argument("--source", type=Path, default=SAMPLE_DOCS, help="Served sample-documents folder.")
     parser.add_argument("--output", type=Path, default=DATA_PATH, help="Metadata JSON output path.")
     args = parser.parse_args()
     docs = run_ingestion(args.source, args.output)
