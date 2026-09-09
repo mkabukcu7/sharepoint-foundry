@@ -1,17 +1,21 @@
-# SharePoint Knowledge Agent Transparency Dashboard MVP
+# Knowledge Metadata Agent MVP
 
-Proof-of-concept repository for an internal Microsoft-style demo showing AI-powered document intelligence for SharePoint knowledge management.
+Proof-of-concept repository showing AI-powered metadata extraction and tagging for an enterprise document library.
 
-The MVP ingests sample PDF, Word, and PowerPoint documents, extracts content and metadata, generates mock AI summaries/tags, applies governance rules, and exposes a dashboard focused on transparency, freshness, ownership, and review status.
+The MVP ingests 12 representative PDF, Word, and PowerPoint documents, extracts their text, uses a Microsoft Foundry prompt agent to generate metadata, and presents a filterable catalog. The demo does not require SharePoint.
 
 ## What this demonstrates
 
-- Automated metadata extraction from SharePoint-style knowledge documents
-- AI-generated document summaries, topics, business areas, audience, and suggested tags
-- Freshness detection: Current, Needs Review, and Stale
-- Risk classification and Human Review Required flags
-- Governance dashboard with stale content, SME accountability, and transparency score
-- Pluggable AI provider design: mock, Azure OpenAI, or OpenAI
+- Automated text extraction from representative enterprise documents
+- AI-generated summaries, themes, tags, language, author, sentiment, business area, audience, and metadata category
+- Filtering by themes, tags, language, author, and sentiment
+- Grouping by category, business area, language, author, or sentiment
+- Knowledge-area rollups for review status, recorded approval, and review recency
+- Country-of-origin extraction with filtering and grouping
+- Optional free-form metadata extraction during batch upload
+- Configurable catalog column for standard or free-form metadata fields
+- Direct links from metadata records to their source demo documents
+- Pluggable Microsoft Foundry and deterministic mock providers
 
 ## Repository structure
 
@@ -25,60 +29,57 @@ knowledge-agent-mvp/
 │   ├── requirements.txt
 │   └── scripts/
 ├── frontend/
-│   ├── package.json
-│   ├── src/
 │   └── static-demo.html
 ├── sample-documents/
 ├── data/
 │   └── extracted-metadata.json
-├── docs/
-│   └── architecture.md
-└── docker-compose.yml
+└── docs/
+	└── architecture.md
 ```
 
 ## Quick start
 
-### Backend
+The bundled dashboard requires only Python 3.12 or later.
+
+From the repository root:
 
 ```powershell
-cd C:\workspace\knowledge-agent-mvp
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r backend\requirements.txt
-python backend\scripts\seed_sample_documents.py
-python backend\scripts\ingest.py
-uvicorn backend.app.main:app --reload --port 8000
+python -m backend.scripts.seed_sample_documents
+python -m backend.scripts.ingest
+python -m uvicorn backend.app.main:app --reload --port 8000
 ```
 
 Open:
 
 - API: http://localhost:8000/api/documents
-- Governance summary: http://localhost:8000/api/governance
-- Static demo: http://localhost:8000/
+- Metadata catalog: http://localhost:8000/
 
-### Frontend React source
+The catalog UI is `frontend\static-demo.html` and is served directly by FastAPI. No separate frontend toolchain is required.
 
-The React + TypeScript source is in `frontend\src`. This environment does not include Node.js, so the repo also includes `frontend\static-demo.html`, served by FastAPI, for an immediately viewable demo.
+## Microsoft Foundry
 
-If Node.js is installed:
+Create a local `.env` file with the Foundry project and prompt-agent reference:
 
-```powershell
-cd C:\workspace\knowledge-agent-mvp\frontend
-npm install
-npm run dev
+```dotenv
+AI_PROVIDER=foundry
+FOUNDRY_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
+FOUNDRY_AGENT_NAME=<agent-name>
+FOUNDRY_AGENT_VERSION=<version>
+FOUNDRY_EXTRACTION_MODEL=gpt-5-mini
 ```
 
-## AI providers
-
-The default provider is `mock`, which requires no external services and uses deterministic heuristics for local demo use.
-
-Set `AI_PROVIDER=azure_openai` or `AI_PROVIDER=openai` when wiring a real model. Provider classes are intentionally pluggable in `backend\app\services\ai_providers.py`.
+Authenticate locally with Azure CLI. The application uses `DefaultAzureCredential` and does not store Azure credentials. Set `AI_PROVIDER=mock` to run with deterministic local metadata generation instead.
 
 ## Demo storyline
 
-1. Drop SharePoint-exported documents into `sample-documents`.
-2. Run ingestion to extract text and generate metadata.
-3. Review the dashboard for stale/high-risk content and missing ownership.
-4. Open a document detail view to see AI summary, tags, risk flags, and review history.
-5. Use the governance dashboard to show transparency score and SME accountability.
+1. Add representative documents to `sample-documents`.
+2. Run ingestion to extract text and generate metadata through Foundry.
+3. Optionally name a custom property and describe what the model should extract during upload.
+4. Review country, recency, review status, and recorded approval by knowledge area.
+5. Browse summaries, themes, classifications, and suggested tags.
+6. Filter or group the catalog to demonstrate metadata-driven discovery.
+7. Open a document detail view and follow its source-document link.
 

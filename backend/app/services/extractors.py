@@ -4,6 +4,9 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 
+CORE_CREATOR = "{http://purl.org/dc/elements/1.1/}creator"
+
+
 def extract_text(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix == ".docx":
@@ -13,6 +16,26 @@ def extract_text(path: Path) -> str:
     if suffix == ".pdf":
         return _extract_simple_pdf(path)
     return path.read_text(encoding="utf-8", errors="ignore")
+
+
+def extract_author(path: Path, text: str) -> str | None:
+    explicit_author = extract_labeled_value(text, "Author")
+    if explicit_author:
+        return explicit_author
+    if path.suffix.lower() not in {".docx", ".pptx"}:
+        return None
+    with zipfile.ZipFile(path) as zf:
+        try:
+            root = ElementTree.fromstring(zf.read("docProps/core.xml"))
+        except KeyError:
+            return None
+    creator = root.find(CORE_CREATOR)
+    return creator.text.strip() if creator is not None and creator.text else None
+
+
+def extract_labeled_value(text: str, label: str) -> str | None:
+    match = re.search(rf"{re.escape(label)}:\s*([^.]+)", text, re.IGNORECASE)
+    return match.group(1).strip() if match else None
 
 
 def _xml_text(xml: bytes) -> str:
@@ -34,8 +57,8 @@ def _extract_pptx(path: Path) -> str:
 
 def _extract_simple_pdf(path: Path) -> str:
     raw = path.read_bytes().decode("latin-1", errors="ignore")
-    parts = re.findall(r"\((.*?)\)\\s*Tj", raw)
+    parts = re.findall(r"\((.*?)\)\s*Tj", raw)
     if parts:
         return " ".join(part.replace("\\\\(", "(").replace("\\\\)", ")") for part in parts)
-    return re.sub(r"\\s+", " ", raw)
+    return re.sub(r"\s+", " ", raw)
 

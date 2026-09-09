@@ -1,0 +1,16 @@
+{
+    "libraryName": "Example Company Knowledge Metadata Library",
+  "columns": [
+    "Document Name",
+    "Theme",
+    "Business Area",
+    "Language",
+    "Author",
+    "Sentiment",
+    "Metadata Category",
+    "Review Status",
+    "Approval Status",
+    "Last Reviewed Age Days"
+  ],
+  "demoPurpose": "Simulates the metadata library structure discussed in the meeting transcript."
+}

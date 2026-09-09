@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The SharePoint Knowledge Agent Transparency Dashboard MVP demonstrates how AI can improve governance for SharePoint knowledge content by automatically extracting metadata, generating summaries, assigning tags, identifying freshness gaps, and surfacing governance insights.
+The Knowledge Metadata Agent MVP demonstrates automated extraction, summarization, tagging, and classification for a representative enterprise document library.
 
 ## Logical architecture
 
@@ -11,10 +11,10 @@ flowchart LR
     A[Sample SharePoint Documents] --> B[Document Ingestion]
     B --> C[Text and Metadata Extraction]
     C --> D[Pluggable AI Provider]
-    D --> E[Governance Rules]
+    D --> E[Structured Metadata Validation]
     E --> F[(extracted-metadata.json)]
     F --> G[FastAPI API]
-    G --> H[React Dashboard]
+    G --> H[Static Metadata Catalog]
 ```
 
 ## Components
@@ -23,21 +23,27 @@ flowchart LR
 |---|---|---|
 | Data | `sample-documents` folder | SharePoint document libraries, Graph API |
 | Extraction | Python OpenXML/PDF text extraction | Graph, Azure AI Document Intelligence, custom parsers |
-| AI | Mock provider | Azure OpenAI or Azure AI Foundry model deployment |
-| Governance | Freshness and risk rules | Purview, managed metadata, human review workflow |
+| AI | Microsoft Foundry prompt agent with mock fallback | Managed Foundry agent and model deployment |
+| Metadata | Themes, tags, language, author, sentiment, category, lifecycle signals | SharePoint managed metadata or Purview taxonomy |
 | Storage | `data/extracted-metadata.json` | Azure Storage, Cosmos DB, Fabric/OneLake |
 | API | FastAPI | Container Apps, App Service, AKS |
-| UI | React/TypeScript + static demo | Enterprise dashboard or SharePoint-integrated app |
+| UI | Filterable static catalog served by FastAPI | Enterprise catalog or SharePoint-integrated app |
 
-## Governance rules
+## Metadata contract
 
-- 0-180 days since last review: Current
-- 181-365 days: Needs Review
-- 365+ days: Stale
-- High Risk if pricing, confidential, or regulated content is detected
-- High Risk content is flagged as Human Review Required
+- Concise summary
+- Themes and suggested tags
+- Language and explicitly identified author
+- Sentiment, business area, audience, and metadata category
+- Grounded review status, recorded approval status, and review recency
+- Country of origin and user-requested custom metadata
+- Application-generated link to the source demo document
+
+The configured prompt agent produces the stable metadata contract. Dynamic country and custom-property extraction uses the project model named by `FOUNDRY_EXTRACTION_MODEL`, defaulting to `gpt-5-mini`. Explicit document labels take precedence over generated values.
+
+Review status and recency are derived from an explicit `Last reviewed age days` field. Approval is populated only from an explicit `Approval status` field; otherwise it remains `Not Recorded`.
 
 ## MVP boundaries
 
-This is not production software. It intentionally uses local sample documents, deterministic mock AI, and JSON file storage so the demo can run quickly without credentials or external services.
+This is not production software. It intentionally uses local sample documents and JSON storage. SharePoint integration, approval workflows, and production storage are deferred beyond the MVP.
 

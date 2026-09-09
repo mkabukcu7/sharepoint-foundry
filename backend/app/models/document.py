@@ -4,19 +4,21 @@ from pydantic import BaseModel
 class DocumentMetadata(BaseModel):
     documentName: str
     fileType: str
-    contentOwner: str
     summary: str
-    topics: list[str]
+    themes: list[str]
+    suggestedTags: list[str]
+    language: str
+    author: str
+    sentiment: str
     businessArea: str
     audience: str
-    documentRisk: str
-    lastReviewedDate: str
-    freshnessStatus: str
-    containsPricing: bool
-    containsConfidentialInfo: bool
-    suggestedTags: list[str]
+    metadataCategory: str
+    countryOfOrigin: str
+    customMetadata: dict[str, str]
     reviewStatus: str
-    humanReviewRequired: bool
+    approvalStatus: str
+    recencyDays: int | None
+    metadataLink: str
     sourcePath: str
     extractedCharacters: int
 
