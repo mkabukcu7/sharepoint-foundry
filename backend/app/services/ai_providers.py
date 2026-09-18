@@ -2,8 +2,12 @@ import os
 import re
 import json
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from dotenv import load_dotenv
+
+from backend.app.services.wtw_classifier import WTWClassifier
+from backend.app.services.taxonomy import Taxonomy, TaxonomyError
 
 load_dotenv()
 
@@ -82,13 +86,18 @@ class OpenAIProvider(AIProvider):
 class FoundryAgentProvider(AIProvider):
     def __init__(self) -> None:
         from azure.ai.projects import AIProjectClient
-        from azure.identity import DefaultAzureCredential
+        from azure.identity import AzureCliCredential, DefaultAzureCredential
 
         endpoint = _required_env("FOUNDRY_PROJECT_ENDPOINT")
         self.agent_name = _required_env("FOUNDRY_AGENT_NAME")
         self.agent_version = _required_env("FOUNDRY_AGENT_VERSION")
         self.extraction_model = os.getenv("FOUNDRY_EXTRACTION_MODEL", "gpt-5-mini")
-        project = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential())
+        credential = (
+            AzureCliCredential()
+            if os.getenv("FOUNDRY_CREDENTIAL_MODE", "default").strip().lower() == "azure_cli"
+            else DefaultAzureCredential()
+        )
+        project = AIProjectClient(endpoint=endpoint, credential=credential)
         self.client = project.get_openai_client()
 
     def analyze(self, document_name: str, text: str, custom_property: tuple[str, str] | None = None) -> dict:
@@ -107,12 +116,13 @@ class FoundryAgentProvider(AIProvider):
             f"<document_text>\n{document_text}\n</document_text>"
         )
         response = self.client.responses.create(
+            model=self.extraction_model,
             input=prompt,
             extra_body={
                 "agent_reference": {
                     "name": self.agent_name,
-                    "version": self.agent_version,
                     "type": "agent_reference",
+                    "version": self.agent_version,
                 }
             },
         )
@@ -162,10 +172,62 @@ class FoundryAgentProvider(AIProvider):
         return _parse_dynamic_json(value, custom_property[0] if custom_property else None)
 
 
+class WTWClassifierProvider(AIProvider):
+    def __init__(self) -> None:
+        from azure.ai.projects import AIProjectClient
+        from azure.identity import AzureCliCredential, DefaultAzureCredential
+
+        endpoint = _required_env("FOUNDRY_PROJECT_ENDPOINT")
+        self.agent_name = _required_env("FOUNDRY_CLASSIFIER_AGENT_NAME")
+        self.agent_version = _required_env("FOUNDRY_CLASSIFIER_AGENT_VERSION")
+        taxonomy_path = Path(os.getenv("FOUNDRY_TAXONOMY_PATH", "taxonomy/controlled-terms.json"))
+        self.classifier = WTWClassifier(Taxonomy.from_file(taxonomy_path))
+        credential = (
+            AzureCliCredential()
+            if os.getenv("FOUNDRY_CREDENTIAL_MODE", "default").strip().lower() == "azure_cli"
+            else DefaultAzureCredential()
+        )
+        project = AIProjectClient(endpoint=endpoint, credential=credential)
+        self.client = project.get_openai_client()
+        self.model = os.getenv("FOUNDRY_EXTRACTION_MODEL", "gpt-5-mini")
+
+    def analyze(self, document_name: str, text: str, custom_property: tuple[str, str] | None = None) -> dict:
+        prompt = self.classifier.prompt(document_name, _bounded_document_text(text))
+        classification = None
+        validation_error = None
+        for attempt in range(2):
+            correction = (
+                f"\nThe previous response failed controlled-taxonomy validation: {validation_error}. "
+                "Remove or replace every invalid value using only the allowed taxonomy values. Return JSON only."
+                if validation_error else ""
+            )
+            response = self.client.responses.create(
+                model=self.model,
+                input=prompt + correction,
+                extra_body={
+                    "agent_reference": {
+                        "name": self.agent_name,
+                        "version": self.agent_version,
+                        "type": "agent_reference",
+                    }
+                },
+            )
+            try:
+                classification = self.classifier.validate(json.loads(response.output_text))
+                break
+            except TaxonomyError as error:
+                validation_error = str(error)
+        if classification is None:
+            raise TaxonomyError(validation_error or "WTW classifier returned invalid taxonomy values")
+        return _classification_to_metadata(classification)
+
+
 def get_provider() -> AIProvider:
     provider = os.getenv("AI_PROVIDER", "mock").strip().lower()
     if provider == "foundry":
         return FoundryAgentProvider()
+    if provider == "foundry_wtw":
+        return WTWClassifierProvider()
     if provider == "azure_openai":
         return AzureOpenAIProvider()
     if provider == "openai":
@@ -173,6 +235,28 @@ def get_provider() -> AIProvider:
     if provider == "mock":
         return MockAIProvider()
     raise ValueError(f"Unsupported AI_PROVIDER: {provider}")
+
+
+def _classification_to_metadata(classification: dict) -> dict:
+    topics = [candidate["value"] for candidate in classification.get("topics", [])]
+    businesses = [candidate["value"] for candidate in classification.get("businesses", [])]
+    material = classification.get("materialType") or {}
+    languages = classification.get("languages", [])
+    language = languages[0]["value"] if languages else "Unknown"
+    return {
+        "summary": classification.get("summary", ""),
+        "themes": topics,
+        "suggestedTags": sorted(set(topics + businesses + ([material["value"]] if material.get("value") else []))),
+        "language": language,
+        "author": "Unknown",
+        "sentiment": "Neutral",
+        "businessArea": businesses[0] if businesses else "Unknown",
+        "audience": "Unknown",
+        "metadataCategory": material.get("value") or "Other",
+        "countryOfOrigin": "Unknown",
+        "customMetadata": {},
+        "wtwClassification": classification,
+    }
 
 
 def _bounded_document_text(text: str) -> str:

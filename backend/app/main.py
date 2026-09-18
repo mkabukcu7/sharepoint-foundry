@@ -1,15 +1,23 @@
 import logging
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
+from backend.app.models.document import MetadataReviewUpdate
+from backend.app.services.reviews import approve_metadata_review, metadata_review, update_field_review
+from backend.app.services.reviews import retry_metadata_writeback
+from backend.app.services.sharepoint import SharePointClient
+from backend.app.services.writeback import SharePointWritebackService, WritebackConflict, WritebackError
 from backend.app.services.storage import DATA_PATH, SAMPLE_DOCS, load_documents
 from backend.app.services.extractors import extract_labeled_value, extract_text
 from backend.app.services.lifecycle import lifecycle_metadata
 
 ROOT = Path(__file__).resolve().parents[2]
 logger = logging.getLogger(__name__)
+load_dotenv()
 
 app = FastAPI(title="Document Metadata Agent MVP")
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx"}
@@ -38,6 +46,7 @@ def documents() -> list[dict]:
             document["countryOfOrigin"] = extract_labeled_value(text, "Country of origin") or "Unknown"
         if needs_lifecycle:
             document.update(lifecycle_metadata(text))
+        document["metadataReview"] = metadata_review(document, document.get("summary", ""))
     return documents
 
 
@@ -51,12 +60,65 @@ def document_content(document_name: str) -> Path:
     return path
 
 
+@app.patch("/api/documents/{document_name}/review")
+def review_document_field(document_name: str, update: MetadataReviewUpdate) -> dict:
+    if Path(document_name).name != document_name:
+        raise HTTPException(status_code=400, detail="Invalid document name")
+    try:
+        return update_field_review(DATA_PATH, SAMPLE_DOCS, document_name, update.field, update.decision, update.value)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Document not found") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/api/documents/{document_name}/review/approve")
+def approve_document_metadata(document_name: str) -> dict:
+    if Path(document_name).name != document_name:
+        raise HTTPException(status_code=400, detail="Invalid document name")
+    try:
+        return approve_metadata_review(DATA_PATH, SAMPLE_DOCS, document_name, _writeback_service())
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Document not found") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WritebackConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except WritebackError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+
+@app.post("/api/documents/{document_name}/review/writeback/retry")
+def retry_document_writeback(document_name: str) -> dict:
+    if Path(document_name).name != document_name:
+        raise HTTPException(status_code=400, detail="Invalid document name")
+    try:
+        return retry_metadata_writeback(DATA_PATH, document_name, _writeback_service())
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Document not found") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WritebackConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except WritebackError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+
 @app.post("/api/ingest")
 def ingest() -> dict:
     from backend.scripts.ingest import run_ingestion
 
     docs = run_ingestion()
     return {"status": "ok", "documents": len(docs)}
+
+
+def _writeback_service() -> SharePointWritebackService:
+    return SharePointWritebackService(SharePointClient(
+        hostname=os.environ["SHAREPOINT_HOSTNAME"],
+        site_path=os.getenv("SHAREPOINT_SITE_PATH", "/"),
+        library_name=os.getenv("SHAREPOINT_LIBRARY_NAME", "Documents"),
+        folder_path=os.getenv("SHAREPOINT_FOLDER_PATH", ""),
+    ))
 
 
 @app.post("/api/documents/upload")

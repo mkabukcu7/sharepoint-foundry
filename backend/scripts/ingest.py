@@ -6,6 +6,7 @@ from backend.app.models.document import DocumentMetadata
 from backend.app.services.ai_providers import get_provider
 from backend.app.services.extractors import extract_author, extract_labeled_value, extract_text
 from backend.app.services.lifecycle import lifecycle_metadata
+from backend.app.services.reviews import metadata_review
 from backend.app.services.storage import DATA_PATH, SAMPLE_DOCS, load_documents, save_documents
 
 
@@ -14,11 +15,12 @@ def run_ingestion(
     data_path: Path = DATA_PATH,
     document_names: set[str] | None = None,
     custom_property: tuple[str, str] | None = None,
+    replace_existing: bool = False,
 ) -> list[dict]:
     if document_names is None and source_dir.resolve() != SAMPLE_DOCS.resolve():
         raise ValueError("--source is limited to sample-documents so generated links remain servable")
     provider = get_provider()
-    documents = [] if document_names is None else [
+    documents = [] if replace_existing or document_names is None else [
         document for document in load_documents(data_path)
         if document.get("documentName") not in document_names
     ]
@@ -47,7 +49,9 @@ def run_ingestion(
             **lifecycle_metadata(text),
             **ai,
         )
-        documents.append(doc.model_dump())
+        document = doc.model_dump()
+        document["metadataReview"] = metadata_review(document, text)
+        documents.append(document)
     documents.sort(key=lambda document: document["documentName"].lower())
     save_documents(documents, data_path)
     return documents

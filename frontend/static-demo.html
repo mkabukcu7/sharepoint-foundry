@@ -7,91 +7,99 @@
   <script>
     (() => {
       const param = new URLSearchParams(window.location.search).get("scoutTheme");
-      const theme =
-        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      const theme = param === "light" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", theme);
     })();
   </script>
   <style>
     :root {
       color-scheme: light;
-      --cp-bg: #f7f4ef;
-      --cp-bg-elevated: #fcfbf8;
+      --cp-bg: #f3f5f4;
+      --cp-bg-elevated: #e9eeeb;
       --cp-surface: #ffffff;
-      --cp-surface-soft: #f5f5f5;
-      --cp-border: #dedede;
-      --cp-border-strong: #919191;
-      --cp-text: #242424;
-      --cp-text-muted: #5c5c5c;
-      --cp-text-soft: #6f6f6f;
-      --cp-accent: #b11f4b;
-      --cp-accent-hover: #9a1a41;
-      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-surface-soft: #edf1ef;
+      --cp-border: #d7ddd9;
+      --cp-border-strong: #77847d;
+      --cp-text: #202522;
+      --cp-text-muted: #66706a;
+      --cp-text-soft: #4c5751;
+      --cp-accent: #087f6b;
+      --cp-accent-hover: #066655;
+      --cp-accent-soft: rgba(8, 127, 107, 0.1);
       --cp-accent-fg: #ffffff;
-      --cp-success: #16a34a;
-      --cp-danger: #dc2626;
-      --cp-warning: #f59e0b;
-      --cp-link: #0078d4;
+      --cp-success: #2e7d32;
+      --cp-danger: #b43a3a;
+      --cp-warning: #b26a00;
+      --cp-link: #1769aa;
       --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
       --cp-overlay: rgba(255, 255, 255, 0.8);
       --cp-panel: rgba(255, 255, 255, 0.86);
       --cp-panel-strong: rgba(255, 255, 255, 0.96);
       --cp-sheen: rgba(255, 255, 255, 0.55);
-      --cp-highlight: rgba(177, 31, 75, 0.12);
+      --cp-highlight: rgba(8, 127, 107, 0.14);
     }
     html[data-theme="dark"] {
       color-scheme: dark;
-      --cp-bg: #3d3b3a;
-      --cp-bg-elevated: #343231;
-      --cp-surface: #292929;
-      --cp-surface-soft: #2e2e2e;
-      --cp-border: #474747;
-      --cp-border-strong: #5f5f5f;
-      --cp-text: #dedede;
-      --cp-text-muted: #919191;
-      --cp-text-soft: #b0b0b0;
-      --cp-accent: #fd8ea1;
-      --cp-accent-hover: #fb7b91;
-      --cp-accent-soft: rgba(253, 142, 161, 0.14);
-      --cp-accent-fg: #1a1a1a;
-      --cp-success: #4ade80;
-      --cp-danger: #f87171;
-      --cp-warning: #fbbf24;
-      --cp-link: #4da6ff;
+      --cp-bg: #171b19;
+      --cp-bg-elevated: #202522;
+      --cp-surface: #252a27;
+      --cp-surface-soft: #2d332f;
+      --cp-border: #3b443f;
+      --cp-border-strong: #65716a;
+      --cp-text: #f0f4f1;
+      --cp-text-muted: #aab4ae;
+      --cp-text-soft: #c7cec9;
+      --cp-accent: #5cd6bd;
+      --cp-accent-hover: #72e3ca;
+      --cp-accent-soft: rgba(92, 214, 189, 0.12);
+      --cp-accent-fg: #10211c;
+      --cp-success: #6fd08c;
+      --cp-danger: #ff8585;
+      --cp-warning: #f3bd58;
+      --cp-link: #7ab8f5;
       --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
-      --cp-overlay: rgba(41, 41, 41, 0.88);
-      --cp-panel: rgba(41, 41, 41, 0.72);
-      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-overlay: rgba(23, 27, 25, 0.88);
+      --cp-panel: rgba(37, 42, 39, 0.78);
+      --cp-panel-strong: rgba(37, 42, 39, 0.96);
       --cp-sheen: rgba(255, 255, 255, 0.04);
-      --cp-highlight: rgba(253, 142, 161, 0.12);
+      --cp-highlight: rgba(92, 214, 189, 0.14);
     }
-    body { margin: 0; background: var(--cp-bg); color: var(--cp-text); font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { min-height: 100vh; margin: 0; background: linear-gradient(180deg, var(--cp-bg-elevated), var(--cp-bg) 360px); color: var(--cp-text); font-family: Aptos, Calibri, sans-serif; }
     * { box-sizing: border-box; }
-    main { max-width: 1500px; margin: 0 auto; padding: 28px; }
+    main { max-width: 1500px; margin: 0 auto; padding: 22px 28px 40px; }
     .hero, .panel, .metric { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 8px; }
-    .hero { padding: 28px; margin-bottom: 18px; border-left: 5px solid var(--cp-accent); }
-    .eyebrow { color: var(--cp-accent); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-    h1 { margin: 0; font-size: 42px; }
-    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-    .area-health { margin-bottom: 18px; }
+    .hero { padding: 22px 24px; margin-bottom: 14px; border-left: 4px solid var(--cp-accent); }
+    .hero p:last-child { max-width: 760px; margin: 8px 0 0; color: var(--cp-text-muted); }
+    .eyebrow { margin: 0 0 6px; color: var(--cp-accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    h1 { margin: 0; font-family: "Aptos Display", Aptos, Calibri, sans-serif; font-size: 34px; line-height: 1.12; }
+    h2 { font-size: 20px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .area-health { margin-bottom: 14px; }
     .area-health h2 { margin-top: 0; }
     .area-health tbody tr { cursor: default; }
-    .metric { padding: 16px; }
+    .metric { padding: 14px 16px; }
     .metric span { color: var(--cp-text-muted); display: block; }
     .metric strong { display: block; font-size: 28px; margin-top: 8px; }
     .success strong { color: var(--cp-success); }
     .warning strong { color: var(--cp-warning); }
     .danger strong { color: var(--cp-danger); }
-    .toolbar { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(6, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px; }
-    .view-controls { display: grid; grid-template-columns: repeat(2, minmax(160px, 220px)); justify-content: end; gap: 10px; margin-bottom: 18px; }
+    .catalog-controls { margin-bottom: 14px; padding: 16px 18px; }
+    .controls-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .controls-heading h2 { margin: 0; }
+    .controls-actions { display: flex; align-items: center; gap: 10px; }
+    .review-toggle { display: flex; align-items: center; gap: 7px; color: var(--cp-text-muted); font-size: 13px; cursor: pointer; }
+    .review-toggle input { width: 16px; height: 16px; accent-color: var(--cp-accent); }
+    .toolbar { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(6, minmax(120px, 1fr)); gap: 10px; }
+    .view-controls { display: grid; grid-template-columns: repeat(2, minmax(160px, 220px)); justify-content: end; gap: 10px; margin-top: 10px; }
     .control { display: grid; gap: 5px; color: var(--cp-text-muted); font-size: 13px; }
     input, select { min-width: 0; width: 100%; padding: 9px 10px; border: 1px solid var(--cp-border-strong); border-radius: 4px; background: var(--cp-surface); color: var(--cp-text); font: inherit; }
     .layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 18px; }
-    .panel { padding: 20px; overflow: hidden; }
+    .panel { padding: 18px; overflow: hidden; }
     table { border-collapse: collapse; width: 100%; }
     th, td { border-bottom: 1px solid var(--cp-border); padding: 10px; text-align: left; vertical-align: top; }
     tbody tr { cursor: pointer; }
     tbody tr:hover { background: var(--cp-accent-soft); }
+    tbody tr.selected { background: var(--cp-highlight); box-shadow: inset 3px 0 var(--cp-accent); }
     .pill { display: inline-block; border: 1px solid var(--cp-border); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
     .group-row th { background: var(--cp-surface-soft); color: var(--cp-accent); font-size: 13px; text-transform: uppercase; }
     .empty { padding: 28px; text-align: center; color: var(--cp-text-muted); }
@@ -100,20 +108,42 @@
     .tags { display: flex; flex-wrap: wrap; gap: 8px; }
     .tags span { background: var(--cp-accent-soft); color: var(--cp-accent); border-radius: 999px; padding: 4px 10px; }
     .document-link { color: var(--cp-link); font-weight: 600; }
-    .upload-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; margin-bottom: 18px; }
-    .dropzone { min-height: 112px; display: grid; place-content: center; gap: 6px; padding: 20px; border: 2px dashed var(--cp-border-strong); border-radius: 6px; text-align: center; cursor: pointer; transition: border-color .16s, background .16s; }
+    .review-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; }
+    .review-summary h3 { margin: 0; }
+    .review-status, .support { display: inline-block; border: 1px solid var(--cp-border); border-radius: 999px; padding: 3px 8px; font-size: 12px; white-space: nowrap; }
+    .review-status.approved, .support.confirmed, .support.grounded { border-color: var(--cp-success); color: var(--cp-success); }
+    .support.inferred { border-color: var(--cp-warning); color: var(--cp-warning); }
+    .support.missing, .support.rejected { border-color: var(--cp-danger); color: var(--cp-danger); }
+    .review-fields { display: grid; gap: 10px; margin-top: 10px; }
+    .review-field { padding: 11px; border: 1px solid var(--cp-border); border-radius: 6px; background: var(--cp-surface-soft); }
+    .review-field header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .review-field input { margin-bottom: 7px; }
+    .evidence { margin: 0 0 9px; color: var(--cp-text-muted); font-size: 12px; line-height: 1.4; }
+    .review-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .review-actions button { padding: 6px 9px; font-size: 12px; }
+    button.danger { border: 1px solid var(--cp-danger); background: transparent; color: var(--cp-danger); }
+    button.danger:hover { background: rgba(255, 133, 133, 0.1); }
+    .approve-review { width: 100%; margin-top: 12px; }
+    .review-message { min-height: 18px; margin: 7px 0 0; color: var(--cp-text-muted); font-size: 12px; }
+    .review-message.error { color: var(--cp-danger); }
+    .review-marker { margin-top: 4px; color: var(--cp-warning); font-size: 11px; }
+    #details { align-self: start; position: sticky; top: 18px; }
+    .upload-panel { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 14px 16px; align-items: center; margin-bottom: 14px; padding: 16px 18px; }
+    .dropzone { min-height: 78px; display: grid; place-content: center; gap: 4px; padding: 14px 20px; border: 1px dashed var(--cp-border-strong); border-radius: 6px; text-align: center; cursor: pointer; transition: border-color .16s, background .16s; }
     .dropzone:hover, .dropzone.dragging { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
     .dropzone strong { font-size: 17px; }
     .dropzone span, .upload-status { color: var(--cp-text-muted); font-size: 13px; }
-    .upload-actions { min-width: 210px; display: grid; gap: 10px; }
+    .upload-actions { display: grid; gap: 8px; }
     .custom-extraction { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(180px, 1fr) minmax(280px, 2fr); gap: 10px; }
     button { border: 0; border-radius: 4px; padding: 10px 14px; background: var(--cp-accent); color: var(--cp-accent-fg); font: inherit; font-weight: 700; cursor: pointer; }
     button:hover { background: var(--cp-accent-hover); }
-    button:disabled { cursor: wait; opacity: .55; }
+    button:disabled { cursor: default; opacity: .55; }
+    button.secondary { padding: 7px 10px; border: 1px solid var(--cp-border-strong); background: transparent; color: var(--cp-text); font-size: 13px; }
+    button.secondary:hover { border-color: var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); }
     .upload-status[data-state="error"] { color: var(--cp-danger); }
     .upload-status[data-state="success"] { color: var(--cp-success); }
-    @media (max-width: 1400px) { .toolbar { grid-template-columns: repeat(3, 1fr); } .layout { grid-template-columns: 1fr; } }
-    @media (max-width: 700px) { main { padding: 14px; } h1 { font-size: 32px; } .cards, .toolbar, .custom-extraction { grid-template-columns: 1fr 1fr; } .toolbar .control:first-child, .custom-extraction .control:last-child { grid-column: 1 / -1; } .view-controls { grid-template-columns: 1fr 1fr; } .upload-panel { grid-template-columns: 1fr; } .upload-actions { min-width: 0; } .panel { overflow-x: auto; } }
+    @media (max-width: 1400px) { .toolbar { grid-template-columns: repeat(3, 1fr); } .toolbar .control:first-child { grid-column: span 2; } .layout { grid-template-columns: 1fr; } #details { position: static; } }
+    @media (max-width: 700px) { main { padding: 10px 10px 28px; } .hero { padding: 16px 17px; } h1 { font-size: 28px; } .cards, .toolbar, .custom-extraction { grid-template-columns: 1fr 1fr; } .toolbar .control:first-child, .custom-extraction .control:last-child { grid-column: 1 / -1; } .view-controls { grid-template-columns: 1fr 1fr; } .upload-panel { grid-template-columns: 1fr; padding: 12px; } .dropzone { min-height: 70px; padding: 10px; } .catalog-controls { padding: 14px 12px; } .panel { overflow-x: auto; } .area-health table { min-width: 620px; } .layout table { min-width: 700px; } th, td { padding: 8px; } }
   </style>
 </head>
 <body>
@@ -146,18 +176,27 @@
         <tbody id="areaRows"></tbody>
       </table>
     </section>
-    <section class="toolbar" aria-label="Catalog filters">
-      <label class="control">Search<input id="search" type="search" placeholder="Document, summary, or tag"></label>
-      <label class="control">Theme<select id="themeFilter"></select></label>
-      <label class="control">Tag<select id="tagFilter"></select></label>
-      <label class="control">Language<select id="languageFilter"></select></label>
-      <label class="control">Author<select id="authorFilter"></select></label>
-      <label class="control">Sentiment<select id="sentimentFilter"></select></label>
-      <label class="control">Country of origin<select id="countryFilter"></select></label>
-    </section>
-    <section class="view-controls" aria-label="Catalog display options">
-      <label class="control">Group by<select id="groupBy"><option value="">None</option><option value="metadataCategory">Category</option><option value="businessArea">Business area</option><option value="language">Language</option><option value="author">Author</option><option value="sentiment">Sentiment</option><option value="countryOfOrigin">Country of origin</option></select></label>
-      <label class="control">Custom column<select id="listField"></select></label>
+    <section class="panel catalog-controls" aria-labelledby="catalogControlsHeading">
+      <div class="controls-heading">
+        <h2 id="catalogControlsHeading">Find documents</h2>
+        <div class="controls-actions">
+          <label class="review-toggle"><input id="reviewOnly" type="checkbox"> Review queue</label>
+          <button class="secondary" id="clearFilters" type="button">Clear filters</button>
+        </div>
+      </div>
+      <div class="toolbar" aria-label="Catalog filters">
+        <label class="control">Search<input id="search" type="search" placeholder="Document, summary, or tag"></label>
+        <label class="control">Theme<select id="themeFilter"></select></label>
+        <label class="control">Tag<select id="tagFilter"></select></label>
+        <label class="control">Language<select id="languageFilter"></select></label>
+        <label class="control">Author<select id="authorFilter"></select></label>
+        <label class="control">Sentiment<select id="sentimentFilter"></select></label>
+        <label class="control">Country of origin<select id="countryFilter"></select></label>
+      </div>
+      <div class="view-controls" aria-label="Catalog display options">
+        <label class="control">Group by<select id="groupBy"><option value="">None</option><option value="metadataCategory">Category</option><option value="businessArea">Business area</option><option value="language">Language</option><option value="author">Author</option><option value="sentiment">Sentiment</option><option value="countryOfOrigin">Country of origin</option></select></label>
+        <label class="control">Custom column<select id="listField"></select></label>
+      </div>
     </section>
     <section class="layout">
       <div class="panel">
@@ -197,6 +236,16 @@
       filters.forEach(id => document.getElementById(id).onchange = render);
       document.getElementById("listField").onchange = render;
       document.getElementById("groupBy").onchange = render;
+      document.getElementById("reviewOnly").onchange = render;
+      document.getElementById("clearFilters").onclick = clearFilters;
+      render();
+    }
+
+    function clearFilters() {
+      document.getElementById("search").value = "";
+      filters.forEach(id => document.getElementById(id).value = "");
+      document.getElementById("groupBy").value = "";
+      document.getElementById("reviewOnly").checked = false;
       render();
     }
 
@@ -260,10 +309,12 @@
 
     function render() {
       const query = document.getElementById("search").value.trim().toLowerCase();
+      const reviewOnly = document.getElementById("reviewOnly").checked;
       const selected = Object.fromEntries(filters.map(id => [id, document.getElementById(id).value]));
       const documents = state.documents.filter(document => {
         const searchable = [document.documentName, document.summary, document.countryOfOrigin, ...Object.entries(document.customMetadata || {}).flat(), ...(document.themes || []), ...(document.suggestedTags || [])].join(" ").toLowerCase();
         return (!query || searchable.includes(query))
+          && (!reviewOnly || document.metadataReview?.status !== "approved")
           && (!selected.themeFilter || document.themes.includes(selected.themeFilter))
           && (!selected.tagFilter || document.suggestedTags.includes(selected.tagFilter))
           && (!selected.languageFilter || document.language === selected.languageFilter)
@@ -275,6 +326,7 @@
       renderKnowledgeAreas(documents);
       renderRows(documents, document.getElementById("groupBy").value);
       if (!state.selected || !documents.includes(state.selected)) show(documents[0]);
+      else show(state.selected);
     }
 
     function renderMetrics(documents) {
@@ -282,7 +334,8 @@
         ["Showing", documents.length],
         ["Themes", flatValues(documents, "themes").length],
         ["Tags", flatValues(documents, "suggestedTags").length],
-        ["Categories", values(documents, "metadataCategory").length]
+        ["Categories", values(documents, "metadataCategory").length],
+        ["Needs review", state.documents.filter(document => document.metadataReview?.status !== "approved").length]
       ];
       const container = document.getElementById("cards");
       container.replaceChildren(...metrics.map(([label, value]) => element("article", { className: "metric" }, element("span", {}, label), element("strong", {}, String(value)))));
@@ -321,8 +374,11 @@
           rows.append(heading);
         }
         items.forEach(document => {
-          const row = element("tr", { role: "button", tabIndex: 0, "aria-label": `Open details for ${document.documentName}` },
-            element("td", {}, document.documentName),
+          const selected = document === state.selected;
+          const documentCell = element("td", {}, document.documentName);
+          if (document.metadataReview?.status !== "approved") documentCell.append(element("div", { className: "review-marker" }, "Needs metadata review"));
+          const row = element("tr", { className: selected ? "selected" : "", role: "button", tabIndex: 0, "aria-selected": String(selected), "aria-label": `Open details for ${document.documentName}` },
+            documentCell,
             element("td", {}, element("span", { className: "pill" }, document.metadataCategory)),
             element("td", {}, document.businessArea),
             element("td", {}, document.language),
@@ -346,10 +402,102 @@
       if (!details) return panel.append(element("p", {}, "No document selected."));
       const link = element("a", { className: "document-link", href: details.metadataLink, target: "_blank", rel: "noreferrer" }, details.documentName);
       panel.append(element("h3", {}, link), element("p", {}, details.summary));
+      renderMetadataReview(panel, details);
       const list = element("dl");
       const recency = Number.isInteger(details.recencyDays) ? `${details.recencyDays} days since review` : "Not recorded";
       [["Author", details.author], ["Language", details.language], ["Sentiment", details.sentiment], ["Country of origin", details.countryOfOrigin || "Unknown"], ["Audience", details.audience], ["Business area", details.businessArea], ["Category", details.metadataCategory], ["Review status", details.reviewStatus], ["Approval", details.approvalStatus], ["Recency", recency], ...Object.entries(details.customMetadata || {})].forEach(([label, value]) => list.append(element("dt", {}, label), element("dd", {}, value)));
       panel.append(list, element("h3", {}, "Themes"), tagList(details.themes), element("h3", {}, "Suggested tags"), tagList(details.suggestedTags));
+      document.querySelectorAll("#rows tr[role='button']").forEach(row => {
+        const selected = row.getAttribute("aria-label") === `Open details for ${details.documentName}`;
+        row.classList.toggle("selected", selected);
+        row.setAttribute("aria-selected", String(selected));
+      });
+    }
+
+    function renderMetadataReview(panel, details) {
+      const review = details.metadataReview;
+      if (!review) return;
+      const approved = review.status === "approved";
+      panel.append(element("div", { className: "review-summary" },
+        element("h3", {}, "Metadata review"),
+        element("span", { className: `review-status ${approved ? "approved" : ""}` }, approved ? "Approved" : "Needs review")));
+      const fields = element("div", { className: "review-fields" });
+      Object.entries(review.fields).forEach(([key, field]) => {
+        const input = element("input", { value: field.value, "aria-label": `${field.label} review value`, disabled: approved });
+        const actions = element("div", { className: "review-actions" });
+        if (!approved) {
+          const accept = element("button", { type: "button" }, field.reviewDecision === "accepted" ? "Accepted" : "Accept");
+          const edit = element("button", { type: "button", className: "secondary" }, "Save edit");
+          const reject = element("button", { type: "button", className: "danger" }, "Reject");
+          accept.onclick = () => submitReview(details, key, "accepted", input.value, accept);
+          edit.onclick = () => submitReview(details, key, "edited", input.value, edit);
+          reject.onclick = () => submitReview(details, key, "rejected", null, reject);
+          actions.append(accept, edit, reject);
+        }
+        const support = field.reviewDecision === "rejected" ? "rejected" : field.support;
+        fields.append(element("article", { className: "review-field" },
+          element("header", {}, element("strong", {}, field.label), element("span", { className: `support ${support}` }, support)),
+          input,
+          element("p", { className: "evidence" }, field.evidence),
+          actions));
+      });
+      panel.append(fields);
+      if (!approved) {
+        const resolved = Object.values(review.fields).every(field => ["accepted", "edited"].includes(field.reviewDecision));
+        const approve = element("button", { type: "button", className: "approve-review", disabled: !resolved }, "Approve metadata");
+        approve.onclick = () => approveReview(details, approve);
+        panel.append(approve, element("p", { className: "review-message", id: "reviewMessage", role: "status", "aria-live": "polite" }, resolved ? "All fields resolved. Ready for approval." : "Accept or edit all five fields to approve."));
+      } else {
+        panel.append(element("p", { className: "review-message" }, `Approved by ${review.reviewedBy} on ${formatDate(review.reviewedAt)}.`));
+      }
+    }
+
+    async function submitReview(details, field, decision, value, button) {
+      button.disabled = true;
+      setReviewMessage("Saving review decision...");
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(details.documentName)}/review`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field, decision, value })
+        });
+        await applyReviewResponse(response);
+      } catch (error) {
+        button.disabled = false;
+        setReviewMessage(error.message, true);
+      }
+    }
+
+    async function approveReview(details, button) {
+      button.disabled = true;
+      setReviewMessage("Approving metadata...");
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(details.documentName)}/review/approve`, { method: "POST" });
+        await applyReviewResponse(response);
+      } catch (error) {
+        button.disabled = false;
+        setReviewMessage(error.message, true);
+      }
+    }
+
+    async function applyReviewResponse(response) {
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || "Review update failed");
+      const index = state.documents.findIndex(document => document.documentName === result.documentName);
+      state.documents[index] = result;
+      state.selected = result;
+      render();
+    }
+
+    function setReviewMessage(message, error = false) {
+      const status = document.getElementById("reviewMessage");
+      if (!status) return;
+      status.textContent = message;
+      status.classList.toggle("error", error);
+    }
+
+    function formatDate(value) {
+      return value ? new Date(value).toLocaleString() : "an unknown date";
     }
 
     function showEmpty(message) {
@@ -365,7 +513,7 @@
     function populateListFields(documents) {
       const select = document.getElementById("listField");
       const previous = select.value;
-      const excluded = new Set(["documentName", "summary", "themes", "suggestedTags", "customMetadata", "metadataLink", "sourcePath"]);
+      const excluded = new Set(["documentName", "summary", "themes", "suggestedTags", "customMetadata", "metadataReview", "metadataLink", "sourcePath"]);
       const standard = [...new Set(documents.flatMap(document => Object.entries(document)
         .filter(([key, value]) => !excluded.has(key) && ["string", "number", "boolean"].includes(typeof value))
         .map(([key]) => key)))].sort((left, right) => listFieldLabel(left).localeCompare(listFieldLabel(right)));

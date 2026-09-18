@@ -11,6 +11,9 @@ venv/
 .env
 *.local
 
+# Customer taxonomy source and generated controlled terms
+taxonomy/
+
 # azd
 .azure/
 
