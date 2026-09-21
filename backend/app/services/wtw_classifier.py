@@ -48,9 +48,9 @@ class WTWClassifier:
         )
 
     def validate(self, result: dict) -> dict:
-        self.taxonomy.validate_result(result)
+        validated = self.taxonomy.validate_result(result)
         for field in CLASSIFICATION_FIELDS:
-            raw = result.get(field, [])
+            raw = validated.get(field, [])
             if raw is None:
                 continue
             candidates = [raw] if isinstance(raw, dict) else raw
@@ -66,11 +66,11 @@ class WTWClassifier:
                     raise TaxonomyError(f"{field} confidence must be between 0 and 1")
                 if not str(candidate.get("evidence", "")).strip():
                     raise TaxonomyError(f"{field} evidence is required")
-        if not isinstance(result.get("reviewRequired"), bool):
+        if not isinstance(validated.get("reviewRequired"), bool):
             raise TaxonomyError("reviewRequired must be boolean")
-        if not isinstance(result.get("riskFlags", []), list):
+        if not isinstance(validated.get("riskFlags", []), list):
             raise TaxonomyError("riskFlags must be a list")
-        return result
+        return validated
 
 
 def load_classifier(path: Path) -> WTWClassifier:

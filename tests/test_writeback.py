@@ -27,7 +27,12 @@ def document() -> dict:
 
 
 class FakeStore:
-    def __init__(self, failure: Exception | None = None, move_failure: Exception | None = None) -> None:
+    def __init__(
+        self,
+        failure: Exception | None = None,
+        move_failure: Exception | None = None,
+        refresh_result: dict | None = None,
+    ) -> None:
         self.calls: list[tuple[str, str, dict, str]] = []
         self.move_calls: list[tuple[str, str, str, str]] = []
         self.upload_calls: list[tuple[str, bytes, str]] = []
@@ -35,6 +40,7 @@ class FakeStore:
         self.refresh_calls: list[tuple[str, str]] = []
         self.failure = failure
         self.move_failure = move_failure
+        self.refresh_result = refresh_result
 
     def update_fields(self, drive_id: str, item_id: str, fields: dict, etag: str) -> dict:
         self.calls.append((drive_id, item_id, fields, etag))
@@ -67,12 +73,12 @@ class FakeStore:
             "parentReference": {"id": "reviewed-id"},
         }
 
-    def delete_item(self, drive_id: str, item_id: str, etag: str = "*") -> None:
+    def delete_item(self, drive_id: str, item_id: str, etag: str) -> None:
         self.delete_calls.append((drive_id, item_id, etag))
 
     def refresh_item(self, drive_id: str, item_id: str) -> dict:
         self.refresh_calls.append((drive_id, item_id))
-        return {
+        return self.refresh_result or {
             "etag": '"etag-refreshed"',
             "listItemEtag": '"list-etag-refreshed"',
             "existingColumns": {
@@ -169,6 +175,43 @@ class WritebackTests(unittest.TestCase):
         self.assertEqual(store.delete_calls, [("drive-id", "staged-id", '"staged-etag"')])
         self.assertNotIn("sharePoint", current)
         self.assertNotIn("sharePointWritebackEnabled", current)
+
+    def test_remove_staged_refreshes_missing_etag_before_delete(self) -> None:
+        store = FakeStore()
+        service = SharePointWritebackService(store)
+        current = document()
+        current["sharePoint"].pop("etag")
+
+        service.remove_staged(current)
+
+        self.assertEqual(store.refresh_calls, [("drive-id", "item-id")])
+        self.assertEqual(store.delete_calls, [("drive-id", "item-id", '"etag-refreshed"')])
+
+    def test_remove_staged_refuses_delete_when_refreshed_etag_is_missing(self) -> None:
+        store = FakeStore(refresh_result={"listItemEtag": '"list-etag-refreshed"'})
+        service = SharePointWritebackService(store)
+        current = document()
+        current["sharePoint"].pop("etag")
+
+        with self.assertRaisesRegex(WritebackError, "ETag required for safe cleanup"):
+            service.remove_staged(current)
+
+        self.assertEqual(store.delete_calls, [])
+        self.assertIn("sharePoint", current)
+
+    def test_apply_refreshes_missing_concurrency_tokens(self) -> None:
+        store = FakeStore()
+        service = SharePointWritebackService(store)
+        current = document()
+        current["sharePoint"].pop("etag")
+        current["sharePoint"].pop("listItemEtag")
+        current["sharePoint"]["existingColumns"].pop("@odata.etag")
+
+        service.apply(current, "sme@example.com", "2026-09-18T20:00:00+00:00")
+
+        self.assertEqual(store.refresh_calls, [("drive-id", "item-id")])
+        self.assertEqual(store.calls[0][3], '"list-etag-refreshed"')
+        self.assertNotEqual(store.move_calls[0][3], "*")
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ class DocumentStore(Protocol):
     def move_item(self, drive_id: str, item_id: str, folder_name: str, etag: str) -> dict:
         ...
 
-    def delete_item(self, drive_id: str, item_id: str, etag: str = "*") -> None:
+    def delete_item(self, drive_id: str, item_id: str, etag: str) -> None:
         ...
 
     def refresh_item(self, drive_id: str, item_id: str) -> dict:
@@ -60,10 +60,20 @@ class SharePointWritebackService:
     def remove_staged(self, document: dict) -> None:
         sharepoint = document.get("sharePoint")
         if isinstance(sharepoint, dict):
+            etag = sharepoint.get("etag")
+            if not etag:
+                current = self.client.refresh_item(
+                    sharepoint["driveId"],
+                    sharepoint["driveItemId"],
+                )
+                etag = current.get("etag")
+                if not etag:
+                    raise WritebackError("SharePoint item is missing an ETag required for safe cleanup")
+                sharepoint["etag"] = etag
             self.client.delete_item(
                 sharepoint["driveId"],
                 sharepoint["driveItemId"],
-                sharepoint.get("etag") or "*",
+                etag,
             )
         document.pop("sharePoint", None)
         document.pop("sharePointStage", None)
@@ -77,6 +87,14 @@ class SharePointWritebackService:
         existing = document.get("sharePointWriteback")
         if isinstance(existing, dict) and existing.get("status") == "applied":
             return document
+        metadata_applied = bool(existing.get("metadataApplied")) if isinstance(existing, dict) else False
+        file_moved = bool(existing.get("fileMoved")) if isinstance(existing, dict) else False
+        list_item_etag = (
+            sharepoint.get("listItemEtag")
+            or (sharepoint.get("existingColumns") or {}).get("@odata.etag")
+        )
+        if (not metadata_applied and not list_item_etag) or (not file_moved and not sharepoint.get("etag")):
+            self.refresh(document)
 
         review = document.get("metadataReview") or {}
         fields = review.get("fields") or {}
@@ -103,8 +121,8 @@ class SharePointWritebackService:
             "lastAttemptAt": _timestamp(),
             "error": None,
             "audit": list(existing.get("audit", [])) if isinstance(existing, dict) else [],
-            "metadataApplied": bool(existing.get("metadataApplied")) if isinstance(existing, dict) else False,
-            "fileMoved": bool(existing.get("fileMoved")) if isinstance(existing, dict) else False,
+            "metadataApplied": metadata_applied,
+            "fileMoved": file_moved,
             "destinationFolder": self.reviewed_folder,
             "oldValues": (
                 dict(existing.get("oldValues", {}))
@@ -118,13 +136,19 @@ class SharePointWritebackService:
         document["sharePointWriteback"] = state
         try:
             if not state["metadataApplied"]:
+                list_item_etag = (
+                    sharepoint.get("listItemEtag")
+                    or (sharepoint.get("existingColumns") or {}).get("@odata.etag")
+                )
+                if not list_item_etag:
+                    raise WritebackError(
+                        "SharePoint list item is missing an ETag required for safe metadata update"
+                    )
                 result = self.client.update_fields(
                     sharepoint["driveId"],
                     sharepoint["driveItemId"],
                     column_values,
-                    sharepoint.get("listItemEtag")
-                    or (sharepoint.get("existingColumns") or {}).get("@odata.etag")
-                    or "*",
+                    list_item_etag,
                 )
                 state["metadataApplied"] = True
                 if result.get("listItemEtag"):
@@ -133,11 +157,14 @@ class SharePointWritebackService:
                     sharepoint["etag"] = result["etag"]
                 sharepoint.setdefault("existingColumns", {}).update(column_values)
             if not state["fileMoved"]:
+                drive_etag = sharepoint.get("etag")
+                if not drive_etag:
+                    raise WritebackError("SharePoint item is missing an ETag required for safe move")
                 moved = self.client.move_item(
                     sharepoint["driveId"],
                     sharepoint["driveItemId"],
                     self.reviewed_folder,
-                    sharepoint.get("etag") or "*",
+                    drive_etag,
                 )
                 state["fileMoved"] = True
                 sharepoint["folderPath"] = self.reviewed_folder

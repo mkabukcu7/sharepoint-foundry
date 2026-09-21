@@ -42,7 +42,26 @@ class WTWClassifierTests(unittest.TestCase):
             "riskFlags": [],
         }
 
-        self.assertIs(self.classifier.validate(result), result)
+        self.assertEqual(self.classifier.validate(result), result)
+
+    def test_validation_returns_canonical_taxonomy_values(self) -> None:
+        result = {
+            "materialType": {"value": "training material", "confidence": 0.9, "evidence": "Training guide"},
+            "topics": [{"value": "career framework", "confidence": 0.8, "evidence": "Career framework"}],
+            "businesses": [],
+            "industries": [],
+            "geographies": [],
+            "collections": [],
+            "languages": [{"value": "english", "confidence": 1, "evidence": "English text"}],
+            "reviewRequired": False,
+            "riskFlags": [],
+        }
+
+        validated = self.classifier.validate(result)
+
+        self.assertEqual(validated["materialType"]["value"], "Training Material")
+        self.assertEqual(validated["topics"][0]["value"], "Career Framework")
+        self.assertEqual(validated["languages"][0]["value"], "English")
 
     def test_invented_term_and_invalid_confidence_are_rejected(self) -> None:
         result = {

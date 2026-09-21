@@ -407,7 +407,7 @@ class SharePointClient:
         result["destinationFolder"] = folder_name
         return result
 
-    def delete_item(self, drive_id: str, item_id: str, etag: str = "*") -> None:
+    def delete_item(self, drive_id: str, item_id: str, etag: str) -> None:
         response = self.session.delete(
             f"{GRAPH_ROOT}/drives/{drive_id}/items/{item_id}",
             headers={**self._headers(), "If-Match": etag},
