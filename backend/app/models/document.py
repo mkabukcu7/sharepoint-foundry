@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
 class DocumentMetadata(BaseModel):
@@ -21,4 +23,14 @@ class DocumentMetadata(BaseModel):
     metadataLink: str
     sourcePath: str
     extractedCharacters: int
+    wtwClassification: dict | None = None
 
+
+class MetadataReviewUpdate(BaseModel):
+    field: Literal["businessArea", "audience", "language", "author", "countryOfOrigin"]
+    decision: Literal["accepted", "edited", "rejected"]
+    value: str | None = Field(default=None, max_length=200)
+
+
+class SharePointStagingImport(BaseModel):
+    documentNames: list[str] = Field(min_length=1, max_length=20)
