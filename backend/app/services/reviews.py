@@ -25,7 +25,7 @@ def metadata_review(document: dict, text: str) -> dict:
     for key, label in REVIEW_FIELDS.items():
         value = _text(document.get(key))
         labeled_value = extract_labeled_value(text, label)
-        support = "missing" if value == "Unknown" else "grounded" if labeled_value else "inferred"
+        support = "grounded" if labeled_value else "missing" if value == "Unknown" else "inferred"
         existing = stored_fields.get(key) if isinstance(stored_fields.get(key), dict) else {}
         fields[key] = {
             "label": label,

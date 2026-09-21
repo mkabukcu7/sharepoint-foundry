@@ -35,10 +35,16 @@ class FakeResponse:
 
 
 class FakeSession:
-    def __init__(self, include_reviewed: bool = False, include_staging: bool = False) -> None:
+    def __init__(
+        self,
+        include_reviewed: bool = False,
+        include_staging: bool = False,
+        duplicate_case_variant: bool = False,
+    ) -> None:
         self.headers: dict[str, str] = {}
         self.include_reviewed = include_reviewed
         self.include_staging = include_staging
+        self.duplicate_case_variant = duplicate_case_variant
         self.requested_urls: list[str] = []
         self.patch_calls: list[tuple[str, dict, dict]] = []
         self.post_calls: list[tuple[str, dict]] = []
@@ -73,6 +79,8 @@ class FakeSession:
                     },
                     {"id": "text-id", "name": "notes.txt", "file": {}},
                 ]
+            if self.duplicate_case_variant:
+                items.append({"id": "pdf-id-2", "name": "GUIDE.PDF", "file": {}})
             if self.include_reviewed:
                 items.append({"id": "Reviewed-id", "name": "Reviewed", "folder": {}})
             if self.include_staging:
@@ -200,6 +208,20 @@ class SharePointClientTests(unittest.TestCase):
 
         self.assertEqual(session.headers["Authorization"], "Bearer managed-login-token")
         self.assertIn("https://graph.microsoft.com/page-2", session.requested_urls)
+
+    def test_download_documents_rejects_case_insensitive_duplicate_names(self) -> None:
+        session = FakeSession(duplicate_case_variant=True)
+        client = SharePointClient(
+            hostname="example.sharepoint.com",
+            site_path="/sites/Knowledge",
+            library_name="Documents",
+            credential=FakeCredential(),
+            session=session,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "Duplicate SharePoint document name"):
+                client.download_documents(Path(directory))
 
     def test_root_site_uses_hostname_endpoint(self) -> None:
         client = SharePointClient(

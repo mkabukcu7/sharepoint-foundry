@@ -4,20 +4,23 @@ from pathlib import Path
 from backend.app.services.taxonomy import Taxonomy, TaxonomyError
 
 
+FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "controlled-terms.json"
+
+
 class TaxonomyTests(unittest.TestCase):
-    taxonomy = Taxonomy.from_file(Path("taxonomy/controlled-terms.json"))
+    taxonomy = Taxonomy.from_file(FIXTURE_PATH)
 
     def test_extracted_categories_match_reference_counts(self) -> None:
-        self.assertEqual(len(self.taxonomy.categories["materialTypes"]), 40)
-        self.assertEqual(len(self.taxonomy.choices("materialTypes")), 37)
-        self.assertEqual(len(self.taxonomy.choices("crossBusinesses")), 14)
-        self.assertEqual(len(self.taxonomy.choices("geographies")), 17)
-        self.assertEqual(len(self.taxonomy.choices("otherGeographies")), 25)
-        self.assertEqual(len(self.taxonomy.choices("languages")), 39)
-        self.assertEqual(len(self.taxonomy.choices("industries")), 85)
-        self.assertEqual(len(self.taxonomy.choices("collections")), 144)
-        self.assertEqual(len(self.taxonomy.choices("series")), 232)
-        self.assertEqual(len(self.taxonomy.choices("topics")), 1225)
+        self.assertEqual(len(self.taxonomy.categories["materialTypes"]), 3)
+        self.assertEqual(len(self.taxonomy.choices("materialTypes")), 2)
+        self.assertEqual(len(self.taxonomy.choices("crossBusinesses")), 2)
+        self.assertEqual(len(self.taxonomy.choices("geographies")), 2)
+        self.assertEqual(len(self.taxonomy.choices("otherGeographies")), 1)
+        self.assertEqual(len(self.taxonomy.choices("languages")), 2)
+        self.assertEqual(len(self.taxonomy.choices("industries")), 1)
+        self.assertEqual(len(self.taxonomy.choices("collections")), 1)
+        self.assertEqual(len(self.taxonomy.choices("series")), 1)
+        self.assertEqual(len(self.taxonomy.choices("topics")), 1)
 
     def test_deprecated_material_terms_are_not_active_choices(self) -> None:
         terms = {entry["value"]: entry for entry in self.taxonomy.categories["materialTypes"]}

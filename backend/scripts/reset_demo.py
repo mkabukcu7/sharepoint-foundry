@@ -3,7 +3,7 @@ from pathlib import Path
 
 from backend.app.services.extractors import extract_text
 from backend.app.services.reviews import metadata_review
-from backend.app.services.storage import DATA_PATH, SAMPLE_DOCS, load_documents, save_documents
+from backend.app.services.storage import DATA_PATH, DEMO_DATA_PATH, SAMPLE_DOCS, load_documents, save_documents
 
 
 BASELINE_REVIEWER = "Demo baseline"
@@ -18,6 +18,18 @@ def reset_demo(
     documents = load_documents(data_path)
     if not documents:
         raise ValueError(f"No demo metadata found at {data_path}")
+
+    template_names = {
+        document.get("documentName")
+        for document in load_documents(DEMO_DATA_PATH)
+        if document.get("documentName")
+    }
+    if template_names:
+        documents = [document for document in documents if document.get("documentName") in template_names]
+        if not documents:
+            raise ValueError(
+                f"None of the documents at {data_path} match the tracked demo template at {DEMO_DATA_PATH}"
+            )
 
     for document in documents:
         if (

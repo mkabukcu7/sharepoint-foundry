@@ -49,8 +49,23 @@ class Taxonomy:
             raw = result.get(output_field, [])
             if raw is None:
                 continue
-            candidates = [raw] if isinstance(raw, (str, dict)) else raw
+            was_scalar = isinstance(raw, (str, dict))
+            candidates = [raw] if was_scalar else raw
             values = [item.get("value") if isinstance(item, dict) else item for item in candidates]
             values = [value for value in values if value is not None]
-            self.validate(category, values)
+            canonical = iter(self.validate(category, values))
+            updated = []
+            for item in candidates:
+                if isinstance(item, dict):
+                    if item.get("value") is None:
+                        updated.append(item)
+                        continue
+                    updated_item = dict(item)
+                    updated_item["value"] = next(canonical)
+                    updated.append(updated_item)
+                elif item is None:
+                    updated.append(item)
+                else:
+                    updated.append(next(canonical))
+            validated[output_field] = updated[0] if was_scalar else updated
         return validated

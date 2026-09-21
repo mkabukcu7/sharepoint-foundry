@@ -6,6 +6,7 @@ from unittest.mock import patch
 from backend.app.services.storage import load_documents, save_documents
 from backend.app.services import storage
 from backend.scripts.demo_preflight import preflight
+from backend.scripts import reset_demo as reset_demo_module
 from backend.scripts.reset_demo import reset_demo
 from backend.scripts import sanitize_demo_metadata as sanitizer
 from backend.scripts.seed_sample_documents import write_pdf
@@ -137,8 +138,11 @@ class DemoReadinessTests(unittest.TestCase):
                     },
                 },
             }], data_path)
+            template_path = root / "demo-metadata.json"
+            save_documents([{"documentName": "guide.pdf"}], template_path)
 
-            reset_demo(data_path, source_dir)
+            with patch.object(reset_demo_module, "DEMO_DATA_PATH", template_path):
+                reset_demo(data_path, source_dir)
             document = load_documents(data_path)[0]
 
             self.assertEqual(document["businessArea"], "Claims")
@@ -157,9 +161,32 @@ class DemoReadinessTests(unittest.TestCase):
                 "sharePointWritebackEnabled": True,
                 "sharePointStage": {"status": "staged"},
             }], data_path)
+            template_path = root / "demo-metadata.json"
+            save_documents([{"documentName": "guide.pdf"}], template_path)
 
-            with self.assertRaisesRegex(ValueError, "complete or clean up"):
+            with patch.object(reset_demo_module, "DEMO_DATA_PATH", template_path):
+                with self.assertRaisesRegex(ValueError, "complete or clean up"):
+                    reset_demo(data_path, source_dir)
+
+    def test_reset_excludes_runtime_only_records_not_in_demo_template(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_dir = root / "documents"
+            source_dir.mkdir()
+            write_pdf(source_dir / "guide.pdf", "Guide.")
+            data_path = root / "metadata.json"
+            save_documents([
+                {"documentName": "guide.pdf"},
+                {"documentName": "tenant-imported.pdf"},
+            ], data_path)
+            template_path = root / "demo-metadata.json"
+            save_documents([{"documentName": "guide.pdf"}], template_path)
+
+            with patch.object(reset_demo_module, "DEMO_DATA_PATH", template_path):
                 reset_demo(data_path, source_dir)
+            documents = load_documents(data_path)
+
+            self.assertEqual([document["documentName"] for document in documents], ["guide.pdf"])
 
 
 if __name__ == "__main__":

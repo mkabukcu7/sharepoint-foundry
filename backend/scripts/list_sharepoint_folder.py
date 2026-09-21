@@ -20,16 +20,7 @@ def main() -> None:
     )
     client._authorize()
     _, drive_id = client._site_and_drive()
-    folder = next(
-        (
-            item
-            for item in client._child_items(drive_id, "root")
-            if "folder" in item and item.get("name", "").casefold() == args.folder.casefold()
-        ),
-        None,
-    )
-    if folder is None:
-        raise ValueError(f"SharePoint folder '{args.folder}' was not found")
+    folder = client._workflow_folder(drive_id, args.folder)
     files = [item for item in client._child_items(drive_id, folder["id"]) if "file" in item]
     print(f"SharePoint folder: {folder.get('webUrl', args.folder)}")
     print(f"Files: {len(files)}")

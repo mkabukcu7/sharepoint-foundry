@@ -41,15 +41,13 @@ def documents() -> list[dict]:
         document.setdefault("customMetadata", {})
         needs_country = "countryOfOrigin" not in document
         needs_lifecycle = any(field not in document for field in ("reviewStatus", "approvalStatus", "recencyDays"))
-        text = ""
-        if needs_country or needs_lifecycle:
-            path = SAMPLE_DOCS / document["documentName"]
-            text = extract_text(path) if path.is_file() else ""
+        path = SAMPLE_DOCS / document["documentName"]
+        text = extract_text(path) if path.is_file() else ""
         if needs_country:
             document["countryOfOrigin"] = extract_labeled_value(text, "Country of origin") or "Unknown"
         if needs_lifecycle:
             document.update(lifecycle_metadata(text))
-        document["metadataReview"] = metadata_review(document, document.get("summary", ""))
+        document["metadataReview"] = metadata_review(document, text)
     return documents
 
 
@@ -259,9 +257,12 @@ def _writeback_service(required: bool = False) -> SharePointWritebackService | N
         raise ValueError("SHAREPOINT_STAGING_FOLDER_NAME must be a single folder name")
     if not reviewed_folder or "/" in reviewed_folder or "\\" in reviewed_folder:
         raise ValueError("SHAREPOINT_REVIEWED_FOLDER_NAME must be a single folder name")
+    hostname = os.getenv("SHAREPOINT_HOSTNAME", "").strip()
+    if not hostname:
+        raise ValueError("SHAREPOINT_HOSTNAME is required when SharePoint write-back is enabled")
     return SharePointWritebackService(
         SharePointClient(
-            hostname=os.environ["SHAREPOINT_HOSTNAME"],
+            hostname=hostname,
             site_path=os.getenv("SHAREPOINT_SITE_PATH", "/"),
             library_name=os.getenv("SHAREPOINT_LIBRARY_NAME", "Documents"),
             folder_path=os.getenv("SHAREPOINT_FOLDER_PATH", ""),

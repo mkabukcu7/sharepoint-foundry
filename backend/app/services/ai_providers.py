@@ -238,10 +238,22 @@ def get_provider() -> AIProvider:
 
 
 def _classification_to_metadata(classification: dict) -> dict:
-    topics = [candidate["value"] for candidate in classification.get("topics", [])]
-    businesses = [candidate["value"] for candidate in classification.get("businesses", [])]
+    topics = [
+        candidate["value"]
+        for candidate in (classification.get("topics") or [])
+        if candidate.get("value") is not None
+    ]
+    businesses = [
+        candidate["value"]
+        for candidate in (classification.get("businesses") or [])
+        if candidate.get("value") is not None
+    ]
     material = classification.get("materialType") or {}
-    languages = classification.get("languages", [])
+    languages = [
+        candidate
+        for candidate in (classification.get("languages") or [])
+        if candidate.get("value") is not None
+    ]
     language = languages[0]["value"] if languages else "Unknown"
     return {
         "summary": classification.get("summary", ""),

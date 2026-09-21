@@ -1,0 +1,40 @@
+{
+  "categories": {
+    "materialTypes": [
+      {"value": "Report", "description": "A written report.", "active": true},
+      {"value": "Presentation", "description": "A slide deck.", "active": true},
+      {"value": "Advertising", "description": "This term is outdated and should not be used.", "active": false}
+    ],
+    "crossBusinesses": [
+      {"value": "Cross Business One", "description": "", "active": true},
+      {"value": "Cross Business Two", "description": "", "active": true}
+    ],
+    "geographies": [
+      {"value": "North America", "description": "", "active": true},
+      {"value": "Europe", "description": "", "active": true}
+    ],
+    "otherGeographies": [
+      {"value": "Canada", "description": "", "active": true}
+    ],
+    "languages": [
+      {"value": "English", "description": "", "active": true},
+      {"value": "Spanish", "description": "", "active": true}
+    ],
+    "industries": [
+      {"value": "Insurance", "description": "", "active": true}
+    ],
+    "collections": [
+      {"value": "Sample Collection", "description": "", "active": true}
+    ],
+    "series": [
+      {"value": "Sample Series", "description": "", "active": true}
+    ],
+    "topics": [
+      {"value": "Sample Topic", "description": "", "active": true}
+    ],
+    "businesses": [
+      {"value": "New Business Ventures LOB", "description": "", "active": true, "parent": null, "path": ["New Business Ventures LOB"]},
+      {"value": "Horizons Practice", "description": "", "active": true, "parent": "New Business Ventures LOB", "path": ["New Business Ventures LOB", "Horizons Practice"]}
+    ]
+  }
+}

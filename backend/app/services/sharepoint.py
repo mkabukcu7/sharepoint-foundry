@@ -100,7 +100,8 @@ class SharePointClient:
         downloaded_names: set[str] = set()
         for item in supported:
             target = destination / Path(item["name"]).name
-            if item["name"] in downloaded_names:
+            normalized_name = item["name"].casefold()
+            if normalized_name in downloaded_names:
                 raise ValueError(f"Duplicate SharePoint document name cannot be flattened safely: {target.name}")
             content = self._download(f"{GRAPH_ROOT}/drives/{drive['id']}/items/{item['id']}/content", target)
             fields = item.get("listItem", {}).get("fields", {})
@@ -119,7 +120,7 @@ class SharePointClient:
                 content=content,
                 local_path=target,
             ))
-            downloaded_names.add(item["name"])
+            downloaded_names.add(normalized_name)
         return downloaded
 
     def list_folder_documents(self, folder_name: str) -> list[dict]:
