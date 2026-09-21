@@ -11,6 +11,9 @@ venv/
 .env
 *.local
 
+# Generated metadata may contain tenant-specific SharePoint identities
+data/extracted-metadata.json
+
 # Customer taxonomy source and generated controlled terms
 taxonomy/
 

@@ -108,6 +108,23 @@
     .tags { display: flex; flex-wrap: wrap; gap: 8px; }
     .tags span { background: var(--cp-accent-soft); color: var(--cp-accent); border-radius: 999px; padding: 4px 10px; }
     .document-link { color: var(--cp-link); font-weight: 600; }
+    .classification-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; }
+    .classification-summary h3 { margin: 0; }
+    .classification-status { display: inline-block; border: 1px solid var(--cp-success); border-radius: 999px; padding: 3px 8px; color: var(--cp-success); font-size: 12px; white-space: nowrap; }
+    .classification-status.review-required { border-color: var(--cp-warning); color: var(--cp-warning); }
+    .classification-fields { display: grid; gap: 12px; margin-top: 10px; }
+    .classification-field { padding: 11px; border: 1px solid var(--cp-border); border-radius: 6px; background: var(--cp-surface-soft); }
+    .classification-field h4 { margin: 0 0 8px; font-size: 13px; }
+    .classification-candidates { display: grid; gap: 8px; }
+    .classification-candidate { padding-top: 8px; border-top: 1px solid var(--cp-border); }
+    .classification-candidate:first-child { padding-top: 0; border-top: 0; }
+    .candidate-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .confidence { flex: 0 0 auto; color: var(--cp-accent); font-size: 12px; font-weight: 700; }
+    .classification-empty { margin: 0; color: var(--cp-text-muted); font-size: 12px; }
+    .risk-flags { display: grid; gap: 8px; margin-top: 10px; }
+    .risk-flag { padding: 9px 10px; border: 1px solid var(--cp-warning); border-radius: 6px; background: color-mix(in srgb, var(--cp-warning) 8%, transparent); }
+    .risk-flag .candidate-heading { color: var(--cp-warning); }
+    .risk-flag .evidence { margin: 5px 0 0; }
     .review-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; }
     .review-summary h3 { margin: 0; }
     .review-status, .support { display: inline-block; border: 1px solid var(--cp-border); border-radius: 999px; padding: 3px 8px; font-size: 12px; white-space: nowrap; }
@@ -142,6 +159,15 @@
     button.secondary:hover { border-color: var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); }
     .upload-status[data-state="error"] { color: var(--cp-danger); }
     .upload-status[data-state="success"] { color: var(--cp-success); }
+    .connector-panel { margin-bottom: 14px; padding: 16px 18px; }
+    .connector-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .connector-heading h2 { margin: 0; }
+    .connector-description { margin: 6px 0 12px; color: var(--cp-text-muted); font-size: 13px; }
+    .connector-files { display: grid; gap: 7px; margin-bottom: 10px; }
+    .connector-file { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--cp-border); border-radius: 5px; }
+    .connector-file input { width: 16px; height: 16px; accent-color: var(--cp-accent); }
+    .connector-file small { color: var(--cp-text-muted); }
+    .connector-actions { display: flex; align-items: center; gap: 10px; }
     @media (max-width: 1400px) { .toolbar { grid-template-columns: repeat(3, 1fr); } .toolbar .control:first-child { grid-column: span 2; } .layout { grid-template-columns: 1fr; } #details { position: static; } }
     @media (max-width: 700px) { main { padding: 10px 10px 28px; } .hero { padding: 16px 17px; } h1 { font-size: 28px; } .cards, .toolbar, .custom-extraction { grid-template-columns: 1fr 1fr; } .toolbar .control:first-child, .custom-extraction .control:last-child { grid-column: 1 / -1; } .view-controls { grid-template-columns: 1fr 1fr; } .upload-panel { grid-template-columns: 1fr; padding: 12px; } .dropzone { min-height: 70px; padding: 10px; } .catalog-controls { padding: 14px 12px; } .panel { overflow-x: auto; } .area-health table { min-width: 620px; } .layout table { min-width: 700px; } th, td { padding: 8px; } }
   </style>
@@ -167,12 +193,28 @@
         <label class="control">Custom tag<input id="customPropertyName" maxlength="60" placeholder="e.g. Claim type"></label>
         <label class="control">Extraction instruction<input id="customPropertyInstruction" maxlength="300" placeholder="e.g. Identify the type of claim described"></label>
       </div>
+      <label class="review-toggle" id="sharePointStageLabel">
+        <input id="stageInSharePoint" type="checkbox" disabled>
+        <span id="sharePointStageText">SharePoint staging is unavailable</span>
+      </label>
+    </section>
+    <section class="panel connector-panel" id="sharePointConnector" aria-labelledby="sharePointConnectorHeading">
+      <div class="connector-heading">
+        <h2 id="sharePointConnectorHeading">SharePoint connectors</h2>
+        <button class="secondary" id="refreshStaging" type="button" disabled>Refresh Staging</button>
+      </div>
+      <p class="connector-description">Select specific files already in SharePoint Staging. Imported files keep their SharePoint identity so approval writes metadata and moves the same item to Reviewed.</p>
+      <div class="connector-files" id="stagingFiles"></div>
+      <div class="connector-actions">
+        <button id="importStaging" type="button" disabled>Import selected</button>
+        <div class="upload-status" id="stagingStatus" role="status" aria-live="polite">SharePoint staging is unavailable.</div>
+      </div>
     </section>
     <section class="cards" id="cards"></section>
     <section class="panel area-health" aria-labelledby="areaHealthHeading">
       <h2 id="areaHealthHeading">Knowledge area health</h2>
       <table>
-        <thead><tr><th>Knowledge area</th><th>Documents</th><th>Review status</th><th>Approval</th><th>Review recency</th></tr></thead>
+        <thead><tr><th>Knowledge area</th><th>Documents</th><th>Review status</th><th>Document approval (source metadata)</th><th>Review recency</th></tr></thead>
         <tbody id="areaRows"></tbody>
       </table>
     </section>
@@ -210,11 +252,127 @@
     </section>
   </main>
   <script>
-    const state = { documents: [], selected: null };
+    const state = { documents: [], selected: null, stagingDocuments: [] };
     const filters = ["themeFilter", "tagFilter", "languageFilter", "authorFilter", "sentimentFilter", "countryFilter"];
 
     loadDocuments();
+    loadCapabilities();
     setupUpload();
+    setupSharePointConnector();
+
+    function loadCapabilities() {
+      return fetch("/api/capabilities")
+        .then(response => {
+          if (!response.ok) throw new Error("Unable to load capabilities");
+          return response.json();
+        })
+        .then(capabilities => {
+          const input = document.getElementById("stageInSharePoint");
+          const text = document.getElementById("sharePointStageText");
+          input.disabled = !capabilities.sharePointWritebackEnabled;
+          input.checked = false;
+          text.textContent = capabilities.sharePointWritebackEnabled
+            ? `Stage this upload in SharePoint/${capabilities.sharePointStagingFolder} for the live review demonstration`
+            : "SharePoint staging is unavailable";
+          document.getElementById("refreshStaging").disabled = !capabilities.sharePointWritebackEnabled;
+          if (capabilities.sharePointWritebackEnabled) return loadStagingDocuments();
+        })
+        .catch(() => {
+          document.getElementById("stageInSharePoint").disabled = true;
+          document.getElementById("refreshStaging").disabled = true;
+          setStagingStatus("Unable to load SharePoint connector capability.", "error");
+        });
+    }
+
+    function setupSharePointConnector() {
+      document.getElementById("refreshStaging").addEventListener("click", loadStagingDocuments);
+      document.getElementById("importStaging").addEventListener("click", importStagingDocuments);
+    }
+
+    async function loadStagingDocuments() {
+      const refresh = document.getElementById("refreshStaging");
+      refresh.disabled = true;
+      document.getElementById("importStaging").disabled = true;
+      setStagingStatus("Loading SharePoint Staging...");
+      try {
+        const response = await fetch("/api/connectors/sharepoint/staging");
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Unable to load SharePoint Staging");
+        state.stagingDocuments = result.documents;
+        renderStagingDocuments();
+        const available = result.documents.filter(item => !item.alreadyImported).length;
+        setStagingStatus(available
+          ? `${available} supported file${available === 1 ? "" : "s"} available in ${result.folder}.`
+          : `No new supported files in ${result.folder}.`);
+      } catch (error) {
+        state.stagingDocuments = [];
+        renderStagingDocuments();
+        setStagingStatus(error.message, "error");
+      } finally {
+        refresh.disabled = false;
+      }
+    }
+
+    function renderStagingDocuments() {
+      const container = document.getElementById("stagingFiles");
+      container.replaceChildren();
+      state.stagingDocuments.forEach(item => {
+        const checkbox = element("input", {
+          type: "checkbox",
+          value: item.documentName,
+          disabled: item.alreadyImported,
+          "aria-label": `Import ${item.documentName}`
+        });
+        checkbox.addEventListener("change", updateStagingSelection);
+        container.append(element("label", { className: "connector-file" },
+          checkbox,
+          element("span", {}, item.documentName),
+          element("small", {}, item.alreadyImported ? "Already imported" : formatBytes(item.size))));
+      });
+      updateStagingSelection();
+    }
+
+    function updateStagingSelection() {
+      document.getElementById("importStaging").disabled =
+        !document.querySelector("#stagingFiles input:checked");
+    }
+
+    async function importStagingDocuments() {
+      const button = document.getElementById("importStaging");
+      const documentNames = [...document.querySelectorAll("#stagingFiles input:checked")]
+        .map(input => input.value);
+      if (!documentNames.length) return;
+      button.disabled = true;
+      setStagingStatus(`Importing ${documentNames.length} selected file${documentNames.length === 1 ? "" : "s"}...`);
+      try {
+        const response = await fetch("/api/connectors/sharepoint/staging/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentNames })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "SharePoint Staging import failed");
+        await loadDocuments();
+        await loadStagingDocuments();
+        setStagingStatus(`${result.imported.length} selected file${result.imported.length === 1 ? "" : "s"} imported for metadata review.`, "success");
+      } catch (error) {
+        button.disabled = false;
+        setStagingStatus(error.message, "error");
+      }
+    }
+
+    function setStagingStatus(message, state = "") {
+      const status = document.getElementById("stagingStatus");
+      status.textContent = message;
+      status.dataset.state = state;
+    }
+
+    function formatBytes(value) {
+      if (!Number.isFinite(value)) return "Size unavailable";
+      if (value < 1024) return `${value} B`;
+      if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+      return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    }
 
     function loadDocuments() {
       return fetch("/api/documents").then(response => {
@@ -285,6 +443,7 @@
       [...input.files].forEach(file => body.append("files", file));
       body.append("custom_property_name", document.getElementById("customPropertyName").value.trim());
       body.append("custom_property_instruction", document.getElementById("customPropertyInstruction").value.trim());
+      body.append("stage_in_sharepoint", String(document.getElementById("stageInSharePoint").checked));
       button.disabled = true;
       setUploadStatus(`Processing ${input.files.length} document${input.files.length === 1 ? "" : "s"}…`);
       try {
@@ -292,8 +451,10 @@
         const result = await response.json();
         if (!response.ok) throw new Error(result.detail || "Upload failed");
         input.value = "";
+        document.getElementById("stageInSharePoint").checked = false;
         document.getElementById("fileSummary").textContent = "PDF, DOCX, or PPTX · up to 20 files · 20 MB each";
-        setUploadStatus(`${result.uploaded.length} processed. Catalog refreshed.`, "success");
+        const destination = result.sharePointFolder ? ` and staged in SharePoint/${result.sharePointFolder}` : "";
+        setUploadStatus(`${result.uploaded.length} processed${destination}. Catalog refreshed.`, "success");
         await loadDocuments();
       } catch (error) {
         button.disabled = false;
@@ -312,7 +473,7 @@
       const reviewOnly = document.getElementById("reviewOnly").checked;
       const selected = Object.fromEntries(filters.map(id => [id, document.getElementById(id).value]));
       const documents = state.documents.filter(document => {
-        const searchable = [document.documentName, document.summary, document.countryOfOrigin, ...Object.entries(document.customMetadata || {}).flat(), ...(document.themes || []), ...(document.suggestedTags || [])].join(" ").toLowerCase();
+        const searchable = [document.documentName, document.summary, document.countryOfOrigin, ...Object.entries(document.customMetadata || {}).flat(), ...(document.themes || []), ...(document.suggestedTags || []), classificationSearchText(document.wtwClassification)].join(" ").toLowerCase();
         return (!query || searchable.includes(query))
           && (!reviewOnly || document.metadataReview?.status !== "approved")
           && (!selected.themeFilter || document.themes.includes(selected.themeFilter))
@@ -335,7 +496,8 @@
         ["Themes", flatValues(documents, "themes").length],
         ["Tags", flatValues(documents, "suggestedTags").length],
         ["Categories", values(documents, "metadataCategory").length],
-        ["Needs review", state.documents.filter(document => document.metadataReview?.status !== "approved").length]
+        ["Metadata review", state.documents.filter(document => document.metadataReview?.status !== "approved").length],
+        ["Taxonomy review", state.documents.filter(document => document.wtwClassification?.reviewRequired).length]
       ];
       const container = document.getElementById("cards");
       container.replaceChildren(...metrics.map(([label, value]) => element("article", { className: "metric" }, element("span", {}, label), element("strong", {}, String(value)))));
@@ -377,6 +539,7 @@
           const selected = document === state.selected;
           const documentCell = element("td", {}, document.documentName);
           if (document.metadataReview?.status !== "approved") documentCell.append(element("div", { className: "review-marker" }, "Needs metadata review"));
+          if (document.wtwClassification?.reviewRequired) documentCell.append(element("div", { className: "review-marker" }, "Needs taxonomy review"));
           const row = element("tr", { className: selected ? "selected" : "", role: "button", tabIndex: 0, "aria-selected": String(selected), "aria-label": `Open details for ${document.documentName}` },
             documentCell,
             element("td", {}, element("span", { className: "pill" }, document.metadataCategory)),
@@ -402,16 +565,111 @@
       if (!details) return panel.append(element("p", {}, "No document selected."));
       const link = element("a", { className: "document-link", href: details.metadataLink, target: "_blank", rel: "noreferrer" }, details.documentName);
       panel.append(element("h3", {}, link), element("p", {}, details.summary));
+      renderWTWClassification(panel, details.wtwClassification);
       renderMetadataReview(panel, details);
       const list = element("dl");
       const recency = Number.isInteger(details.recencyDays) ? `${details.recencyDays} days since review` : "Not recorded";
-      [["Author", details.author], ["Language", details.language], ["Sentiment", details.sentiment], ["Country of origin", details.countryOfOrigin || "Unknown"], ["Audience", details.audience], ["Business area", details.businessArea], ["Category", details.metadataCategory], ["Review status", details.reviewStatus], ["Approval", details.approvalStatus], ["Recency", recency], ...Object.entries(details.customMetadata || {})].forEach(([label, value]) => list.append(element("dt", {}, label), element("dd", {}, value)));
+      [["Author", details.author], ["Language", details.language], ["Sentiment", details.sentiment], ["Country of origin", details.countryOfOrigin || "Unknown"], ["Audience", details.audience], ["Business area", details.businessArea], ["Category", details.metadataCategory], ["Review status", details.reviewStatus], ["Document approval (source metadata)", details.approvalStatus], ["Recency", recency], ...Object.entries(details.customMetadata || {})].forEach(([label, value]) => list.append(element("dt", {}, label), element("dd", {}, value)));
       panel.append(list, element("h3", {}, "Themes"), tagList(details.themes), element("h3", {}, "Suggested tags"), tagList(details.suggestedTags));
       document.querySelectorAll("#rows tr[role='button']").forEach(row => {
         const selected = row.getAttribute("aria-label") === `Open details for ${details.documentName}`;
         row.classList.toggle("selected", selected);
         row.setAttribute("aria-selected", String(selected));
       });
+    }
+
+    function renderWTWClassification(panel, classification) {
+      if (!classification) return;
+      const reviewRequired = classification.reviewRequired === true;
+      panel.append(element("div", { className: "classification-summary" },
+        element("h3", {}, "WTW controlled classification"),
+        element("span", { className: `classification-status ${reviewRequired ? "review-required" : ""}` }, reviewRequired ? "Review required" : "Validated")));
+
+      const fields = element("div", { className: "classification-fields" });
+      [
+        ["Material type", classification.materialType],
+        ["Topics", classification.topics],
+        ["Businesses", classification.businesses],
+        ["Industries", classification.industries],
+        ["Geographies", classification.geographies],
+        ["Collections", classification.collections],
+        ["Languages", classification.languages]
+      ].forEach(([label, rawCandidates]) => {
+        const candidates = classificationCandidates(rawCandidates);
+        const content = candidates.length
+          ? element("div", { className: "classification-candidates" }, ...candidates.map(renderClassificationCandidate))
+          : element("p", { className: "classification-empty" }, "No controlled term selected.");
+        fields.append(element("section", { className: "classification-field" }, element("h4", {}, label), content));
+      });
+      panel.append(fields);
+
+      const riskFlags = (Array.isArray(classification.riskFlags) ? classification.riskFlags : [])
+        .map(normalizeRiskFlag)
+        .filter(flag => flag.label);
+      panel.append(element("div", { className: "classification-summary" },
+        element("h3", {}, "Risk flags"),
+        element("span", { className: `classification-status ${riskFlags.length ? "review-required" : ""}` }, riskFlags.length ? String(riskFlags.length) : "None")));
+      if (!riskFlags.length) {
+        panel.append(element("p", { className: "classification-empty" }, "No content risks were identified."));
+        return;
+      }
+      panel.append(element("div", { className: "risk-flags" }, ...riskFlags.map(flag =>
+        element("article", { className: "risk-flag" },
+          element("div", { className: "candidate-heading" },
+            element("strong", {}, flag.label),
+            flag.confidence === null ? "" : element("span", { className: "confidence" }, formatConfidence(flag.confidence))),
+          flag.evidence ? element("p", { className: "evidence" }, flag.evidence) : ""))));
+    }
+
+    function classificationCandidates(value) {
+      if (!value) return [];
+      const candidates = Array.isArray(value) ? value : [value];
+      return candidates.filter(candidate => candidate && (typeof candidate === "string" || candidate.value));
+    }
+
+    function renderClassificationCandidate(candidate) {
+      const normalized = typeof candidate === "string"
+        ? { value: candidate, confidence: null, evidence: "" }
+        : { value: candidate.value, confidence: candidate.confidence, evidence: candidate.evidence || "" };
+      return element("article", { className: "classification-candidate" },
+        element("div", { className: "candidate-heading" },
+          element("strong", {}, normalized.value),
+          normalized.confidence === null || normalized.confidence === undefined ? "" : element("span", { className: "confidence" }, formatConfidence(normalized.confidence))),
+        normalized.evidence ? element("p", { className: "evidence" }, normalized.evidence) : "");
+    }
+
+    function normalizeRiskFlag(flag) {
+      if (typeof flag === "string") return { label: flag, confidence: null, evidence: "" };
+      if (!flag || typeof flag !== "object") return { label: "", confidence: null, evidence: "" };
+      return {
+        label: String(flag.flag || flag.value || flag.name || "").trim(),
+        confidence: typeof flag.confidence === "number" ? flag.confidence : null,
+        evidence: String(flag.evidence || flag.reason || "").trim()
+      };
+    }
+
+    function formatConfidence(confidence) {
+      return `${Math.round(Math.max(0, Math.min(1, Number(confidence))) * 100)}% confidence`;
+    }
+
+    function classificationSearchText(classification) {
+      if (!classification) return "";
+      const candidates = [
+        classification.materialType,
+        classification.topics,
+        classification.businesses,
+        classification.industries,
+        classification.geographies,
+        classification.collections,
+        classification.languages
+      ].flatMap(classificationCandidates);
+      const terms = candidates.flatMap(candidate => typeof candidate === "string"
+        ? [candidate]
+        : [candidate.value, candidate.evidence]);
+      const risks = (Array.isArray(classification.riskFlags) ? classification.riskFlags : [])
+        .map(normalizeRiskFlag)
+        .flatMap(flag => [flag.label, flag.evidence]);
+      return [...terms, ...risks].filter(Boolean).join(" ");
     }
 
     function renderMetadataReview(panel, details) {
@@ -421,6 +679,10 @@
       panel.append(element("div", { className: "review-summary" },
         element("h3", {}, "Metadata review"),
         element("span", { className: `review-status ${approved ? "approved" : ""}` }, approved ? "Approved" : "Needs review")));
+      if (details.sharePointStage?.status === "staged") {
+        panel.append(element("p", { className: "review-message" },
+          `SharePoint staging: ${details.sharePointStage.folder}. Approval will write metadata and move this file to Reviewed.`));
+      }
       const fields = element("div", { className: "review-fields" });
       Object.entries(review.fields).forEach(([key, field]) => {
         const input = element("input", { value: field.value, "aria-label": `${field.label} review value`, disabled: approved });
@@ -448,7 +710,28 @@
         approve.onclick = () => approveReview(details, approve);
         panel.append(approve, element("p", { className: "review-message", id: "reviewMessage", role: "status", "aria-live": "polite" }, resolved ? "All fields resolved. Ready for approval." : "Accept or edit all five fields to approve."));
       } else {
-        panel.append(element("p", { className: "review-message" }, `Approved by ${review.reviewedBy} on ${formatDate(review.reviewedAt)}.`));
+        const writeback = details.sharePointWriteback;
+        panel.append(
+          element("p", { className: "review-message" }, `Metadata approved by ${review.reviewedBy} on ${formatDate(review.reviewedAt)}.`),
+          element("p", { className: "review-message" }, `Document approval remains ${details.approvalStatus || "Not recorded"} because it is separate source metadata.`)
+        );
+        if (writeback?.status === "applied") {
+          const destination = writeback.destinationFolder || details.sharePoint?.folderPath || "Reviewed";
+          const message = element("p", { className: "review-message" }, `SharePoint metadata applied and file moved to ${destination}.`);
+          if (details.sharePoint?.webUrl) {
+            message.append(" ", element("a", { className: "document-link", href: details.sharePoint.webUrl, target: "_blank", rel: "noreferrer" }, "Open in SharePoint"));
+          }
+          panel.append(message);
+        } else if (["failed", "conflict"].includes(writeback?.status)) {
+          const retry = element("button", { type: "button", className: "approve-review" }, "Retry SharePoint write-back");
+          retry.onclick = () => retryWriteback(details, retry);
+          panel.append(
+            element("p", { className: "review-message error", id: "reviewMessage", role: "status", "aria-live": "polite" }, writeback.error || "SharePoint write-back failed."),
+            retry
+          );
+        } else if (details.sharePoint) {
+          panel.append(element("p", { className: "review-message" }, "Approved locally. SharePoint write-back was not enabled."));
+        }
       }
     }
 
@@ -464,6 +747,20 @@
         await applyReviewResponse(response);
       } catch (error) {
         button.disabled = false;
+        await loadDocuments();
+        setReviewMessage(error.message, true);
+      }
+    }
+
+    async function retryWriteback(details, button) {
+      button.disabled = true;
+      setReviewMessage("Retrying SharePoint metadata and move...");
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(details.documentName)}/review/writeback/retry`, { method: "POST" });
+        await applyReviewResponse(response);
+      } catch (error) {
+        button.disabled = false;
+        await loadDocuments();
         setReviewMessage(error.message, true);
       }
     }
@@ -476,6 +773,7 @@
         await applyReviewResponse(response);
       } catch (error) {
         button.disabled = false;
+        await loadDocuments();
         setReviewMessage(error.message, true);
       }
     }
@@ -538,7 +836,7 @@
         language: "Language",
         audience: "Audience",
         countryOfOrigin: "Country of origin",
-        approvalStatus: "Approval",
+        approvalStatus: "Document approval (source metadata)",
         reviewStatus: "Review status",
         recencyDays: "Review recency",
         extractedCharacters: "Extracted characters"

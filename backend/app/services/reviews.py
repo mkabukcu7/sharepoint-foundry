@@ -104,7 +104,7 @@ def approve_metadata_review(
         review["reviewedBy"] = reviewer
         review["reviewedAt"] = _timestamp()
         document["metadataReview"] = review
-        if writeback_service and document.get("sharePoint"):
+        if writeback_service and document.get("sharePoint") and document.get("sharePointWritebackEnabled") is True:
             try:
                 writeback_service.apply(document, reviewer, review["reviewedAt"])
             except Exception:
@@ -126,9 +126,12 @@ def retry_metadata_writeback(
         state = document.get("sharePointWriteback")
         if not isinstance(state, dict) or state.get("status") not in {"failed", "conflict"}:
             raise ValueError("Only failed or conflicted writebacks can be retried")
-        result = writeback_service.apply(document, reviewer, state.get("reviewedAt") or _timestamp())
-        save_documents(documents, data_path)
-        return result
+        try:
+            if state.get("status") == "conflict":
+                writeback_service.refresh(document)
+            return writeback_service.apply(document, reviewer, state.get("reviewedAt") or _timestamp())
+        finally:
+            save_documents(documents, data_path)
 
 
 def _find_document(documents: list[dict], document_name: str) -> dict:

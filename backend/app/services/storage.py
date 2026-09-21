@@ -5,12 +5,16 @@ from tempfile import NamedTemporaryFile
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA_PATH = ROOT / "data" / "extracted-metadata.json"
+DEMO_DATA_PATH = ROOT / "data" / "demo-metadata.json"
 SAMPLE_DOCS = ROOT / "sample-documents"
 
 
 def load_documents(path: Path = DATA_PATH) -> list[dict]:
     if not path.exists():
-        return []
+        if path == DATA_PATH and DEMO_DATA_PATH.exists():
+            path = DEMO_DATA_PATH
+        else:
+            return []
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -25,4 +29,3 @@ def save_documents(documents: list[dict], path: Path = DATA_PATH) -> None:
     finally:
         if temporary_path:
             temporary_path.unlink(missing_ok=True)
-

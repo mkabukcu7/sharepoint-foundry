@@ -1,0 +1,1205 @@
+[
+  {
+    "documentName": "01-example-company-benefits-overview-faq.pdf",
+    "fileType": "PDF",
+    "summary": "Frequently asked questions for employees about benefits forms, eligibility guidance, and common plan resources.",
+    "themes": [
+      "Eligibility Requirements",
+      "Benefits Communication",
+      "Plan Administration",
+      "Plan Communications and Disclosures"
+    ],
+    "suggestedTags": [
+      "Benefits Administration",
+      "Benefits Communication",
+      "Eligibility Requirements",
+      "Page",
+      "Plan Administration",
+      "Plan Communications and Disclosures"
+    ],
+    "language": "English",
+    "author": "Sample Author 10",
+    "sentiment": "Positive",
+    "businessArea": "Benefits Administration",
+    "audience": "Unknown",
+    "metadataCategory": "Page",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 42,
+    "metadataLink": "/api/documents/01-example-company-benefits-overview-faq.pdf",
+    "sourcePath": "sample-documents/01-example-company-benefits-overview-faq.pdf",
+    "extractedCharacters": 354,
+    "wtwClassification": {
+      "title": "Example Company Benefits Overview FAQ",
+      "summary": "Frequently asked questions for employees about benefits forms, eligibility guidance, and common plan resources.",
+      "materialType": {
+        "value": "Page",
+        "confidence": 0.6,
+        "evidence": "Document is described as an 'FAQ' and addresses employee-facing 'Frequently asked questions', which commonly appear as an FAQ page."
+      },
+      "topics": [
+        {
+          "value": "Eligibility Requirements",
+          "confidence": 0.95,
+          "evidence": "Text explicitly states 'eligibility guidance'."
+        },
+        {
+          "value": "Benefits Communication",
+          "confidence": 0.9,
+          "evidence": "Title and description indicate this is a 'Benefits Overview FAQ' providing communication to employees about plan resources."
+        },
+        {
+          "value": "Plan Administration",
+          "confidence": 0.75,
+          "evidence": "References to 'benefits forms' and 'common plan resources' relate to plan administration activities."
+        },
+        {
+          "value": "Plan Communications and Disclosures",
+          "confidence": 0.8,
+          "evidence": "An FAQ for employees about benefits constitutes a form of plan communications and disclosures."
+        }
+      ],
+      "businesses": [
+        {
+          "value": "Benefits Administration",
+          "confidence": 0.95,
+          "evidence": "Document metadata: 'Business area: Benefits.'"
+        }
+      ],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 1.0,
+          "evidence": "Document metadata: 'Language: English.'"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "internal-only content"
+      ]
+    },
+    "metadataReview": {
+      "status": "approved",
+      "reviewedBy": "Demo baseline",
+      "reviewedAt": "2026-09-18T00:00:00+00:00",
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Benefits Administration",
+          "originalValue": "Benefits Administration",
+          "support": "confirmed",
+          "evidence": "Business area: Benefits",
+          "reviewDecision": "accepted",
+          "decidedAt": "2026-09-18T00:00:00+00:00"
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "confirmed",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "accepted",
+          "decidedAt": "2026-09-18T00:00:00+00:00"
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "confirmed",
+          "evidence": "Language: English",
+          "reviewDecision": "accepted",
+          "decidedAt": "2026-09-18T00:00:00+00:00"
+        },
+        "author": {
+          "label": "Author",
+          "value": "Sample Author 10",
+          "originalValue": "Sample Author 10",
+          "support": "confirmed",
+          "evidence": "Author: Sample Author 10",
+          "reviewDecision": "accepted",
+          "decidedAt": "2026-09-18T00:00:00+00:00"
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "confirmed",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "accepted",
+          "decidedAt": "2026-09-18T00:00:00+00:00"
+        }
+      }
+    }
+  },
+  {
+    "documentName": "02-claims-submission-procedure.pdf",
+    "fileType": "PDF",
+    "summary": "Step-by-step claims intake workflow for internal operations teams and SME review. Business area: Claims. Metadata category: Procedure. Approval status: Pending.",
+    "themes": [
+      "Claims Service"
+    ],
+    "suggestedTags": [
+      "Claims Operations",
+      "Claims Service",
+      "Policies and Standards"
+    ],
+    "language": "English",
+    "author": "Sample Author 11",
+    "sentiment": "Neutral",
+    "businessArea": "Claims Operations",
+    "audience": "Unknown",
+    "metadataCategory": "Policies and Standards",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Pending",
+    "recencyDays": 255,
+    "metadataLink": "/api/documents/02-claims-submission-procedure.pdf",
+    "sourcePath": "sample-documents/02-claims-submission-procedure.pdf",
+    "extractedCharacters": 305,
+    "wtwClassification": {
+      "title": "Claims Submission Procedure",
+      "summary": "Step-by-step claims intake workflow for internal operations teams and SME review. Business area: Claims. Metadata category: Procedure. Approval status: Pending.",
+      "materialType": {
+        "value": "Policies and Standards",
+        "confidence": 0.6,
+        "evidence": "Document labelled 'Metadata category: Procedure' and describes a 'Step by step claims intake workflow for internal operations teams', consistent with an internal policy/procedure or standards document."
+      },
+      "topics": [
+        {
+          "value": "Claims Service",
+          "confidence": 0.9,
+          "evidence": "'Claims Submission Procedure' and 'claims intake workflow' indicate the document pertains to claims service processes."
+        }
+      ],
+      "businesses": [
+        {
+          "value": "Claims Operations",
+          "confidence": 0.95,
+          "evidence": "Document states 'Business area: Claims' which maps directly to Claims Operations."
+        }
+      ],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 1.0,
+          "evidence": "Document metadata: 'Language: English.'"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "internal-only content",
+        "approval status pending"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Claims Operations",
+          "originalValue": "Claims Operations",
+          "support": "grounded",
+          "evidence": "Business area: Claims",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Sample Author 11",
+          "originalValue": "Sample Author 11",
+          "support": "grounded",
+          "evidence": "Author: Sample Author 11",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "03-advisor-knowledge-playbook.docx",
+    "fileType": "DOCX",
+    "summary": "Advisor guidance for finding knowledge articles, forms, and client servicing resources.",
+    "themes": [
+      "How to Guides"
+    ],
+    "suggestedTags": [
+      "How to Guides",
+      "Training Materials"
+    ],
+    "language": "English",
+    "author": "Sample Author 12",
+    "sentiment": "Positive",
+    "businessArea": "Unknown",
+    "audience": "Unknown",
+    "metadataCategory": "Training Materials",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 92,
+    "metadataLink": "/api/documents/03-advisor-knowledge-playbook.docx",
+    "sourcePath": "sample-documents/03-advisor-knowledge-playbook.docx",
+    "extractedCharacters": 324,
+    "wtwClassification": {
+      "title": "Advisor Knowledge Playbook",
+      "summary": "Advisor guidance for finding knowledge articles, forms, and client servicing resources.",
+      "materialType": {
+        "value": "Training Materials",
+        "confidence": 0.8,
+        "evidence": "Document labeled 'Advisor Knowledge Playbook' and 'Metadata category: Guide' \u2014 content described as 'Advisor guidance for finding knowledge articles, forms, and client servicing resources.'"
+      },
+      "topics": [
+        {
+          "value": "How to Guides",
+          "confidence": 0.9,
+          "evidence": "Described as guidance/playbook: 'Advisor guidance for finding knowledge articles, forms, and client servicing resources.'"
+        }
+      ],
+      "businesses": [],
+      "industries": [],
+      "geographies": [],
+      "collections": [
+        {
+          "value": "Knowledge Sharing",
+          "confidence": 0.7,
+          "evidence": "Title and purpose indicate a playbook for advisor knowledge sharing: 'Advisor Knowledge Playbook' and guidance for finding knowledge articles."
+        }
+      ],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 1.0,
+          "evidence": "Document metadata: 'Language: English.'"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "internal-only content",
+        "personal data"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "Business area: Advisor Experience",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Sample Author 12",
+          "originalValue": "Sample Author 12",
+          "support": "grounded",
+          "evidence": "Author: Sample Author 12",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "04-legacy-policy-servicing-notes.docx",
+    "fileType": "DOCX",
+    "summary": "Legacy Policy Servicing Notes. Business area: Policy Servicing. Metadata category: Reference. Theme: Legacy Content. Author: Unassigned. Language: English. Sentiment: Negative. Approval status: Not Recorded. Last reviewed age days: 640. Older policy servicing notes that may conflict with current navigation and should be reviewed before use.",
+    "themes": [],
+    "suggestedTags": [],
+    "language": "English",
+    "author": "Unassigned",
+    "sentiment": "Negative",
+    "businessArea": "Unknown",
+    "audience": "Unknown",
+    "metadataCategory": "Other",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Not Recorded",
+    "recencyDays": 640,
+    "metadataLink": "/api/documents/04-legacy-policy-servicing-notes.docx",
+    "sourcePath": "sample-documents/04-legacy-policy-servicing-notes.docx",
+    "extractedCharacters": 342,
+    "wtwClassification": {
+      "title": "Legacy Policy Servicing Notes",
+      "summary": "Legacy Policy Servicing Notes. Business area: Policy Servicing. Metadata category: Reference. Theme: Legacy Content. Author: Unassigned. Language: English. Sentiment: Negative. Approval status: Not Recorded. Last reviewed age days: 640. Older policy servicing notes that may conflict with current navigation and should be reviewed before use.",
+      "materialType": {
+        "value": null,
+        "confidence": 0,
+        "evidence": "Document metadata states 'Metadata category: Reference' but none of the allowed materialTypes exactly match 'Reference' or clearly describe 'Legacy Policy Servicing Notes'."
+      },
+      "topics": [],
+      "businesses": [],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 0.95,
+          "evidence": "Document metadata: 'Language: English.'"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "internal-only content",
+        "legacy/outdated content",
+        "approval status not recorded",
+        "may conflict with current navigation"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "Business area: Policy Servicing",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Unassigned",
+          "originalValue": "Unassigned",
+          "support": "grounded",
+          "evidence": "Author: Unassigned",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "05-plan-pricing-reference.pptx",
+    "fileType": "PPTX",
+    "summary": "Internal reference presentation providing confidential pricing, fee, and rate card guidance for pricing/business operations. Author: Finance Operations. Approval status: Restricted.",
+    "themes": [
+      "Fees",
+      "Scoping and Pricing"
+    ],
+    "suggestedTags": [
+      "Fees",
+      "Finance",
+      "Internal Presentation",
+      "Scoping and Pricing"
+    ],
+    "language": "English",
+    "author": "Finance Operations",
+    "sentiment": "Neutral",
+    "businessArea": "Finance",
+    "audience": "Unknown",
+    "metadataCategory": "Internal Presentation",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Restricted",
+    "recencyDays": 120,
+    "metadataLink": "/api/documents/05-plan-pricing-reference.pptx",
+    "sourcePath": "sample-documents/05-plan-pricing-reference.pptx",
+    "extractedCharacters": 317,
+    "wtwClassification": {
+      "title": "Plan Pricing Reference",
+      "summary": "Internal reference presentation providing confidential pricing, fee, and rate card guidance for pricing/business operations. Author: Finance Operations. Approval status: Restricted.",
+      "materialType": {
+        "value": "Internal Presentation",
+        "confidence": 0.95,
+        "evidence": "File name ends with .pptx and text states 'Confidential pricing, fee, and rate card guidance for internal review only.' and 'Approval status: Restricted.'"
+      },
+      "topics": [
+        {
+          "value": "Fees",
+          "confidence": 0.95,
+          "evidence": "Document text: 'Confidential pricing, fee, and rate card guidance for internal review only.'"
+        },
+        {
+          "value": "Scoping and Pricing",
+          "confidence": 0.75,
+          "evidence": "Document metadata: 'Business area: Pricing. Theme: Pricing.' and describes pricing and rate card guidance."
+        }
+      ],
+      "businesses": [
+        {
+          "value": "Finance",
+          "confidence": 0.95,
+          "evidence": "Author listed as 'Finance Operations' and business area is Pricing."
+        }
+      ],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 1.0,
+          "evidence": "Document text: 'Language: English.'"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "internal-only content",
+        "confidential pricing",
+        "release risk"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Finance",
+          "originalValue": "Finance",
+          "support": "grounded",
+          "evidence": "Business area: Pricing",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Finance Operations",
+          "originalValue": "Finance Operations",
+          "support": "grounded",
+          "evidence": "Author: Finance Operations",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "06-privacy-compliance-checklist.pdf",
+    "fileType": "PDF",
+    "summary": "Regulatory privacy compliance checklist from the Compliance Office covering retention, confidential data handling, and non-public information. Approved; last reviewed 375 days ago. Language: English.",
+    "themes": [
+      "Privacy",
+      "Data Protection",
+      "Records of Data Processing"
+    ],
+    "suggestedTags": [
+      "Compliance",
+      "Data Protection",
+      "Privacy",
+      "Project Checklist",
+      "Records of Data Processing"
+    ],
+    "language": "English",
+    "author": "Compliance Office",
+    "sentiment": "Neutral",
+    "businessArea": "Compliance",
+    "audience": "Unknown",
+    "metadataCategory": "Project Checklist",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Stale",
+    "approvalStatus": "Approved",
+    "recencyDays": 375,
+    "metadataLink": "/api/documents/06-privacy-compliance-checklist.pdf",
+    "sourcePath": "sample-documents/06-privacy-compliance-checklist.pdf",
+    "extractedCharacters": 329,
+    "wtwClassification": {
+      "title": "Privacy Compliance Checklist",
+      "summary": "Regulatory privacy compliance checklist from the Compliance Office covering retention, confidential data handling, and non-public information. Approved; last reviewed 375 days ago. Language: English.",
+      "materialType": {
+        "value": "Project Checklist",
+        "confidence": 0.95,
+        "evidence": "Document title and metadata: 'Privacy Compliance Checklist.' Metadata category: Checklist."
+      },
+      "topics": [
+        {
+          "value": "Privacy",
+          "confidence": 0.99,
+          "evidence": "Theme: Privacy; document title: 'Privacy Compliance Checklist.'"
+        },
+        {
+          "value": "Data Protection",
+          "confidence": 0.9,
+          "evidence": "Described as a 'Regulatory privacy checklist' covering 'confidential data handling' and 'non-public information.'"
+        },
+        {
+          "value": "Records of Data Processing",
+          "confidence": 0.85,
+          "evidence": "Checklist covers 'retention,' which relates to records and data processing retention requirements."
+        }
+      ],
+      "businesses": [
+        {
+          "value": "Compliance",
+          "confidence": 0.99,
+          "evidence": "Business area: Compliance (document metadata)."
+        }
+      ],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 0.99,
+          "evidence": "Language: English (document metadata)."
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "personal data",
+        "internal-only content",
+        "external publication risk"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Compliance",
+          "originalValue": "Compliance",
+          "support": "grounded",
+          "evidence": "Business area: Compliance",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Compliance Office",
+          "originalValue": "Compliance Office",
+          "support": "grounded",
+          "evidence": "Author: Compliance Office",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "07-spanish-benefits-quick-guide.docx",
+    "fileType": "DOCX",
+    "summary": "Spanish-language benefits overview for employees who need quick navigation support.",
+    "themes": [
+      "Employee Benefits",
+      "Benefits Communication"
+    ],
+    "suggestedTags": [
+      "Benefits Communication",
+      "Benefits Delivery and Administration",
+      "Employee Benefits",
+      "Training Materials"
+    ],
+    "language": "Spanish",
+    "author": "Employee Experience",
+    "sentiment": "Positive",
+    "businessArea": "Benefits Delivery and Administration",
+    "audience": "Unknown",
+    "metadataCategory": "Training Materials",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 60,
+    "metadataLink": "/api/documents/07-spanish-benefits-quick-guide.docx",
+    "sourcePath": "sample-documents/07-spanish-benefits-quick-guide.docx",
+    "extractedCharacters": 317,
+    "wtwClassification": {
+      "title": "Spanish Benefits Quick Guide",
+      "summary": "Spanish-language benefits overview for employees who need quick navigation support.",
+      "materialType": {
+        "value": "Training Materials",
+        "confidence": 0.7,
+        "evidence": "Document labeled 'Metadata category: Guide' and titled 'Spanish Benefits Quick Guide' \u2014 functions as an employee-facing guide; closest matching allowed material type is 'Training Materials'."
+      },
+      "topics": [
+        {
+          "value": "Employee Benefits",
+          "confidence": 0.95,
+          "evidence": "Document title and content: 'Spanish Benefits Quick Guide' and 'Business area: Benefits' indicate the document describes employee benefits."
+        },
+        {
+          "value": "Benefits Communication",
+          "confidence": 0.85,
+          "evidence": "Described as a 'Spanish-language benefits overview for employees who need quick navigation support' \u2014 intended as communication to employees about benefits."
+        }
+      ],
+      "businesses": [
+        {
+          "value": "Benefits Delivery and Administration",
+          "confidence": 0.8,
+          "evidence": "Document states 'Business area: Benefits' and author 'Employee Experience' indicating alignment with Benefits Delivery and Administration business area."
+        }
+      ],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "Spanish",
+          "confidence": 1.0,
+          "evidence": "Document explicitly states 'Language: Spanish'."
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "internal-only content"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Benefits Delivery and Administration",
+          "originalValue": "Benefits Delivery and Administration",
+          "support": "grounded",
+          "evidence": "Business area: Benefits",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "Spanish",
+          "originalValue": "Spanish",
+          "support": "grounded",
+          "evidence": "Language: Spanish",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Employee Experience",
+          "originalValue": "Employee Experience",
+          "support": "grounded",
+          "evidence": "Author: Employee Experience",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "08-retirement-education-article.pptx",
+    "fileType": "PPTX",
+    "summary": "Educational content explaining retirement options, rollover forms, and advisor handoff paths.",
+    "themes": [
+      "Retirement Planning",
+      "Plan Communications and Disclosures",
+      "Retirement Communication"
+    ],
+    "suggestedTags": [
+      "Plan Communications and Disclosures",
+      "Retirement Communication",
+      "Retirement LOB",
+      "Retirement Planning",
+      "Training Materials"
+    ],
+    "language": "English",
+    "author": "Knowledge Team",
+    "sentiment": "Positive",
+    "businessArea": "Retirement LOB",
+    "audience": "Unknown",
+    "metadataCategory": "Training Materials",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Approved",
+    "recencyDays": 188,
+    "metadataLink": "/api/documents/08-retirement-education-article.pptx",
+    "sourcePath": "sample-documents/08-retirement-education-article.pptx",
+    "extractedCharacters": 357,
+    "wtwClassification": {
+      "title": "Retirement Education Article",
+      "summary": "Educational content explaining retirement options, rollover forms, and advisor handoff paths.",
+      "materialType": {
+        "value": "Training Materials",
+        "confidence": 0.85,
+        "evidence": "Metadata category: Education; document describes 'Educational content explaining retirement options, rollover forms, and advisor handoff paths.'"
+      },
+      "topics": [
+        {
+          "value": "Retirement Planning",
+          "confidence": 0.95,
+          "evidence": "Document title and body: 'Retirement Education Article' and 'Educational content explaining retirement options...'."
+        },
+        {
+          "value": "Plan Communications and Disclosures",
+          "confidence": 0.9,
+          "evidence": "Document refers to 'rollover forms' and 'advisor handoff paths', which are elements of plan communications and disclosures."
+        },
+        {
+          "value": "Retirement Communication",
+          "confidence": 0.85,
+          "evidence": "Content describes educational and handoff communications for retirement participants ('advisor handoff paths')."
+        }
+      ],
+      "businesses": [
+        {
+          "value": "Retirement LOB",
+          "confidence": 0.9,
+          "evidence": "Document explicitly states 'Business area: Retirement.'"
+        }
+      ],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 0.99,
+          "evidence": "Document metadata: 'Language: English.'"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "External Publication",
+        "Approval Status: Approved"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Retirement LOB",
+          "originalValue": "Retirement LOB",
+          "support": "grounded",
+          "evidence": "Business area: Retirement",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Knowledge Team",
+          "originalValue": "Knowledge Team",
+          "support": "grounded",
+          "evidence": "Author: Knowledge Team",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "09-contact-center-escalation-matrix.pdf",
+    "fileType": "PDF",
+    "summary": "Escalation matrix for unresolved servicing questions, handoffs, and support ownership. Business area: Operations. Metadata category: Matrix. Approval status: Pending.",
+    "themes": [],
+    "suggestedTags": [
+      "Operations",
+      "Tools"
+    ],
+    "language": "English",
+    "author": "Operations SME",
+    "sentiment": "Neutral",
+    "businessArea": "Operations",
+    "audience": "Unknown",
+    "metadataCategory": "Tools",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Needs Review",
+    "approvalStatus": "Pending",
+    "recencyDays": 330,
+    "metadataLink": "/api/documents/09-contact-center-escalation-matrix.pdf",
+    "sourcePath": "sample-documents/09-contact-center-escalation-matrix.pdf",
+    "extractedCharacters": 311,
+    "wtwClassification": {
+      "title": "Contact Center Escalation Matrix",
+      "summary": "Escalation matrix for unresolved servicing questions, handoffs, and support ownership. Business area: Operations. Metadata category: Matrix. Approval status: Pending.",
+      "materialType": {
+        "value": "Tools",
+        "confidence": 0.85,
+        "evidence": "'Contact Center Escalation Matrix' and 'Metadata category: Matrix' indicate a practical operational matrix/tool for use by staff."
+      },
+      "topics": [],
+      "businesses": [
+        {
+          "value": "Operations",
+          "confidence": 0.98,
+          "evidence": "'Business area: Operations' (document text)"
+        }
+      ],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 1.0,
+          "evidence": "'Language: English' (document text)"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        "internal-only content",
+        "approval pending"
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Operations",
+          "originalValue": "Operations",
+          "support": "grounded",
+          "evidence": "Business area: Operations",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Operations SME",
+          "originalValue": "Operations SME",
+          "support": "grounded",
+          "evidence": "Author: Operations SME",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  },
+  {
+    "documentName": "10-knowledge-metadata-library-model.docx",
+    "fileType": "DOCX",
+    "summary": "Simulated metadata library structure for taxonomy metadata, authored by Information Architecture. Language: English. Approval status: Approved.",
+    "themes": [
+      "Knowledge Architecture"
+    ],
+    "suggestedTags": [
+      "Knowledge Architecture",
+      "Tools"
+    ],
+    "language": "English",
+    "author": "Information Architecture",
+    "sentiment": "Neutral",
+    "businessArea": "Unknown",
+    "audience": "Unknown",
+    "metadataCategory": "Tools",
+    "countryOfOrigin": "Unknown",
+    "customMetadata": {},
+    "reviewStatus": "Current",
+    "approvalStatus": "Approved",
+    "recencyDays": 15,
+    "metadataLink": "/api/documents/10-knowledge-metadata-library-model.docx",
+    "sourcePath": "sample-documents/10-knowledge-metadata-library-model.docx",
+    "extractedCharacters": 393,
+    "wtwClassification": {
+      "title": "Knowledge Metadata Library Model",
+      "summary": "Simulated metadata library structure for taxonomy metadata, authored by Information Architecture. Language: English. Approval status: Approved.",
+      "materialType": {
+        "value": "Tools",
+        "confidence": 0.7,
+        "evidence": "Document titled 'Knowledge Metadata Library Model' and describes a 'Simulated metadata library structure' which indicates a tool/model for metadata management."
+      },
+      "topics": [
+        {
+          "value": "Knowledge Architecture",
+          "confidence": 0.85,
+          "evidence": "Metadata category: 'Taxonomy', Theme: 'Metadata Library', and Author: 'Information Architecture' \u2014 all indicate content about metadata/knowledge architecture."
+        }
+      ],
+      "businesses": [],
+      "industries": [],
+      "geographies": [],
+      "collections": [],
+      "languages": [
+        {
+          "value": "English",
+          "confidence": 1,
+          "evidence": "Document text: 'Language: English.'"
+        }
+      ],
+      "reviewRequired": true,
+      "riskFlags": [
+        {
+          "flag": "internal-only content",
+          "confidence": 0.6,
+          "evidence": "References to 'Business area: Knowledge Management', 'Simulated metadata library structure', and 'Approval status: Approved' suggest this is internal Knowledge Management documentation."
+        }
+      ]
+    },
+    "metadataReview": {
+      "status": "needs-review",
+      "reviewedBy": null,
+      "reviewedAt": null,
+      "fields": {
+        "businessArea": {
+          "label": "Business area",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "Business area: Knowledge Management",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "audience": {
+          "label": "Audience",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "language": {
+          "label": "Language",
+          "value": "English",
+          "originalValue": "English",
+          "support": "grounded",
+          "evidence": "Language: English",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "author": {
+          "label": "Author",
+          "value": "Information Architecture",
+          "originalValue": "Information Architecture",
+          "support": "grounded",
+          "evidence": "Author: Information Architecture",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        },
+        "countryOfOrigin": {
+          "label": "Country of origin",
+          "value": "Unknown",
+          "originalValue": "Unknown",
+          "support": "missing",
+          "evidence": "No explicit labeled evidence found.",
+          "reviewDecision": "pending",
+          "decidedAt": null
+        }
+      }
+    }
+  }
+]

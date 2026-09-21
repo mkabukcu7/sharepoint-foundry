@@ -22,6 +22,10 @@ def run_sharepoint_ingestion(
         site_path=os.getenv("SHAREPOINT_SITE_PATH", "/"),
         library_name=os.getenv("SHAREPOINT_LIBRARY_NAME", "Documents"),
         folder_path=os.getenv("SHAREPOINT_FOLDER_PATH", ""),
+        excluded_folder_names={
+            os.getenv("SHAREPOINT_STAGING_FOLDER_NAME", "Staging"),
+            os.getenv("SHAREPOINT_REVIEWED_FOLDER_NAME", "Reviewed"),
+        },
     )
     with tempfile.TemporaryDirectory(prefix="sharepoint-sync-") as staging:
         downloaded = source.download_documents(Path(staging))

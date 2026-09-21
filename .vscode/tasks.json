@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Demo: Reset",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.reset_demo",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Demo: Preflight",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_preflight",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Demo: Test",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v",
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Demo: Run",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
+      "isBackground": true,
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "Demo: Run offline fallback",
+      "type": "shell",
+      "command": "$env:AI_PROVIDER='mock'; .\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
+      "isBackground": true,
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Demo: Check live Foundry",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_foundry_check",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Demo: Verify",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_preflight; if ($LASTEXITCODE -eq 0) { .\\.venv\\Scripts\\python.exe -m backend.scripts.demo_foundry_check }; if ($LASTEXITCODE -eq 0) { .\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v }",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "SharePoint: List columns",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_columns",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "SharePoint: List Staging",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_folder Staging",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "SharePoint: List Reviewed",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_folder Reviewed",
+      "problemMatcher": [],
+      "group": "test"
+    }
+  ]
+}

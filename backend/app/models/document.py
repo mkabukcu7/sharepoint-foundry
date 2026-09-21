@@ -31,3 +31,6 @@ class MetadataReviewUpdate(BaseModel):
     decision: Literal["accepted", "edited", "rejected"]
     value: str | None = Field(default=None, max_length=200)
 
+
+class SharePointStagingImport(BaseModel):
+    documentNames: list[str] = Field(min_length=1, max_length=20)

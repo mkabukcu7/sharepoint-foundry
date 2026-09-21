@@ -17,10 +17,57 @@ class DocumentStore(Protocol):
     def update_fields(self, drive_id: str, item_id: str, fields: dict, etag: str) -> dict:
         ...
 
+    def upload_document(self, file_name: str, content: bytes, folder_name: str) -> dict:
+        ...
+
+    def move_item(self, drive_id: str, item_id: str, folder_name: str, etag: str) -> dict:
+        ...
+
+    def delete_item(self, drive_id: str, item_id: str, etag: str = "*") -> None:
+        ...
+
+    def refresh_item(self, drive_id: str, item_id: str) -> dict:
+        ...
+
 
 class SharePointWritebackService:
-    def __init__(self, client: DocumentStore) -> None:
+    def __init__(
+        self,
+        client: DocumentStore,
+        column_map: dict[str, str] | None = None,
+        staging_folder: str = "Staging",
+        reviewed_folder: str = "Reviewed",
+    ) -> None:
         self.client = client
+        self.column_map = column_map or {}
+        self.staging_folder = staging_folder
+        self.reviewed_folder = reviewed_folder
+
+    def stage(self, document: dict, content: bytes) -> dict:
+        document["sharePoint"] = self.client.upload_document(
+            document["documentName"],
+            content,
+            self.staging_folder,
+        )
+        document["sharePointStage"] = {
+            "status": "staged",
+            "folder": self.staging_folder,
+            "stagedAt": _timestamp(),
+        }
+        document["sharePointWritebackEnabled"] = True
+        return document
+
+    def remove_staged(self, document: dict) -> None:
+        sharepoint = document.get("sharePoint")
+        if isinstance(sharepoint, dict):
+            self.client.delete_item(
+                sharepoint["driveId"],
+                sharepoint["driveItemId"],
+                sharepoint.get("etag") or "*",
+            )
+        document.pop("sharePoint", None)
+        document.pop("sharePointStage", None)
+        document.pop("sharePointWritebackEnabled", None)
 
     def apply(self, document: dict, reviewer: str, reviewed_at: str) -> dict:
         sharepoint = document.get("sharePoint")
@@ -56,15 +103,48 @@ class SharePointWritebackService:
             "lastAttemptAt": _timestamp(),
             "error": None,
             "audit": list(existing.get("audit", [])) if isinstance(existing, dict) else [],
+            "metadataApplied": bool(existing.get("metadataApplied")) if isinstance(existing, dict) else False,
+            "fileMoved": bool(existing.get("fileMoved")) if isinstance(existing, dict) else False,
+            "destinationFolder": self.reviewed_folder,
+            "oldValues": (
+                dict(existing.get("oldValues", {}))
+                if isinstance(existing, dict)
+                else {
+                    column: (sharepoint.get("existingColumns") or {}).get(column)
+                    for column in column_values
+                }
+            ),
         }
         document["sharePointWriteback"] = state
         try:
-            result = self.client.update_fields(
-                sharepoint["driveId"],
-                sharepoint["driveItemId"],
-                column_values,
-                sharepoint.get("etag") or "*",
-            )
+            if not state["metadataApplied"]:
+                result = self.client.update_fields(
+                    sharepoint["driveId"],
+                    sharepoint["driveItemId"],
+                    column_values,
+                    sharepoint.get("listItemEtag")
+                    or (sharepoint.get("existingColumns") or {}).get("@odata.etag")
+                    or "*",
+                )
+                state["metadataApplied"] = True
+                if result.get("listItemEtag"):
+                    sharepoint["listItemEtag"] = result["listItemEtag"]
+                if result.get("etag"):
+                    sharepoint["etag"] = result["etag"]
+                sharepoint.setdefault("existingColumns", {}).update(column_values)
+            if not state["fileMoved"]:
+                moved = self.client.move_item(
+                    sharepoint["driveId"],
+                    sharepoint["driveItemId"],
+                    self.reviewed_folder,
+                    sharepoint.get("etag") or "*",
+                )
+                state["fileMoved"] = True
+                sharepoint["folderPath"] = self.reviewed_folder
+                sharepoint["parentReference"] = moved.get("parentReference")
+                sharepoint["webUrl"] = moved.get("webUrl", sharepoint.get("webUrl", ""))
+                if moved.get("eTag"):
+                    sharepoint["etag"] = moved["eTag"]
         except WritebackConflict as error:
             state.update({"status": "conflict", "error": str(error)})
             raise
@@ -76,17 +156,34 @@ class SharePointWritebackService:
         state["error"] = None
         state["audit"].extend({
             "column": column,
-            "oldValue": (sharepoint.get("existingColumns") or {}).get(column),
+            "oldValue": state["oldValues"].get(column),
             "newValue": value,
             "changedAt": _timestamp(),
             "reviewer": reviewer,
         } for column, value in column_values.items())
-        if result.get("etag"):
-            sharepoint["etag"] = result["etag"]
+        document.pop("sharePointStage", None)
         return document
 
-    @staticmethod
-    def _column_values(existing_columns: dict, approved: dict) -> dict:
+    def refresh(self, document: dict) -> dict:
+        sharepoint = document.get("sharePoint")
+        if not isinstance(sharepoint, dict):
+            raise WritebackError("Document is missing SharePoint identity metadata")
+        current = self.client.refresh_item(
+            sharepoint["driveId"],
+            sharepoint["driveItemId"],
+        )
+        for key in ("etag", "listItemEtag", "existingColumns", "parentReference", "webUrl"):
+            if current.get(key) is not None:
+                sharepoint[key] = current[key]
+        state = document.get("sharePointWriteback")
+        if isinstance(state, dict):
+            state["oldValues"] = {
+                column: (sharepoint.get("existingColumns") or {}).get(column)
+                for column in state.get("oldValues", {})
+            }
+        return document
+
+    def _column_values(self, existing_columns: dict, approved: dict) -> dict:
         values = {}
         labels = {
             "businessArea": "Business area",
@@ -96,6 +193,10 @@ class SharePointWritebackService:
             "countryOfOrigin": "Country of origin",
         }
         for field, value in approved.items():
+            configured_column = self.column_map.get(field)
+            if configured_column:
+                values[configured_column] = value
+                continue
             candidates = (labels.get(field, field), field)
             column = next((key for key in existing_columns if key.casefold() in {candidate.casefold() for candidate in candidates}), None)
             if column:
