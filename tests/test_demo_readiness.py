@@ -9,10 +9,26 @@ from backend.scripts.demo_preflight import preflight
 from backend.scripts import reset_demo as reset_demo_module
 from backend.scripts.reset_demo import reset_demo
 from backend.scripts import sanitize_demo_metadata as sanitizer
-from backend.scripts.seed_sample_documents import write_pdf
+from backend.scripts.seed_sample_documents import seed_documents, write_pdf
 
 
 class DemoReadinessTests(unittest.TestCase):
+    def test_sample_document_seed_is_reproducible(self) -> None:
+        expected_dir = Path("sample-documents")
+        with tempfile.TemporaryDirectory() as directory:
+            generated_dir = Path(directory)
+            seed_documents(generated_dir)
+
+            expected = sorted(path.name for path in expected_dir.iterdir())
+            generated = sorted(path.name for path in generated_dir.iterdir())
+            self.assertEqual(generated, expected)
+            for name in expected:
+                self.assertEqual(
+                    (generated_dir / name).read_bytes(),
+                    (expected_dir / name).read_bytes(),
+                    name,
+                )
+
     def test_generated_metadata_falls_back_to_sanitized_template(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

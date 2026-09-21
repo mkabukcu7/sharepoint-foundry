@@ -192,6 +192,12 @@ Use `AI_PROVIDER=mock` for a deterministic offline presentation. Use `AI_PROVIDE
 1. Add representative documents to `sample-documents`.
 2. Start with the approved baseline record, then contrast it with records needing metadata review.
 3. Inspect the WTW controlled classification, confidence, evidence, review requirement, and risk flags.
+
+The tracked 10-document corpus is the single source for the demo and automated tests. Recreate it deterministically with:
+
+```powershell
+python -m backend.scripts.seed_sample_documents
+```
 4. Optionally upload a document to run live extraction through Foundry.
 5. Optionally name a custom property and describe what the model should extract during upload.
 6. Review country, recency, review status, and recorded approval by knowledge area.
