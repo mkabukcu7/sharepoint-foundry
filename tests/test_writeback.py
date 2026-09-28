@@ -32,14 +32,19 @@ class FakeStore:
         failure: Exception | None = None,
         move_failure: Exception | None = None,
         refresh_result: dict | None = None,
+        archive_failure: Exception | None = None,
     ) -> None:
         self.calls: list[tuple[str, str, dict, str]] = []
         self.move_calls: list[tuple[str, str, str, str]] = []
         self.upload_calls: list[tuple[str, bytes, str]] = []
         self.delete_calls: list[tuple[str, str, str]] = []
+        self.archive_calls: list[tuple[str, str, str, str, str | None]] = []
         self.refresh_calls: list[tuple[str, str]] = []
+        self.replace_calls: list[tuple[str, str, bytes, str]] = []
+        self.version_calls: list[tuple[str, str]] = []
         self.failure = failure
         self.move_failure = move_failure
+        self.archive_failure = archive_failure
         self.refresh_result = refresh_result
 
     def update_fields(self, drive_id: str, item_id: str, fields: dict, etag: str) -> dict:
@@ -48,6 +53,8 @@ class FakeStore:
             failure = self.failure
             self.failure = None
             raise failure
+        if item_id == "target-item":
+            return {"etag": '"etag-after-fields"', "listItemEtag": '"list-etag-after-fields"'}
         return {"etag": '"etag-2"', "listItemEtag": '"list-etag-2"'}
 
     def upload_document(self, file_name: str, content: bytes, folder_name: str) -> dict:
@@ -76,8 +83,40 @@ class FakeStore:
     def delete_item(self, drive_id: str, item_id: str, etag: str) -> None:
         self.delete_calls.append((drive_id, item_id, etag))
 
+    def archive_item(
+        self,
+        drive_id: str,
+        item_id: str,
+        folder_name: str,
+        etag: str,
+        new_name: str | None = None,
+    ) -> dict:
+        self.archive_calls.append((drive_id, item_id, folder_name, etag, new_name))
+        if self.archive_failure:
+            failure = self.archive_failure
+            self.archive_failure = None
+            raise failure
+        return {
+            "name": new_name,
+            "webUrl": f"https://example.sharepoint.com/{folder_name}/{new_name}",
+            "destinationFolder": folder_name,
+        }
+
     def refresh_item(self, drive_id: str, item_id: str) -> dict:
         self.refresh_calls.append((drive_id, item_id))
+        if item_id == "staged-item":
+            return {"etag": '"staged-etag"', "listItemEtag": '"staged-list-etag"', "existingColumns": {}}
+        if item_id == "target-item":
+            return {
+                "etag": '"etag-refreshed"',
+                "listItemEtag": '"target-list-etag"',
+                "existingColumns": {
+                    "@odata.etag": '"target-list-etag"',
+                    "Business area": "Current area",
+                    "Audience": "Current audience",
+                },
+                "webUrl": "https://example.sharepoint.com/Reviewed/guide.pdf",
+            }
         return self.refresh_result or {
             "etag": '"etag-refreshed"',
             "listItemEtag": '"list-etag-refreshed"',
@@ -86,6 +125,41 @@ class FakeStore:
                 "Business area": "Current area",
                 "Audience": "Current audience",
             },
+        }
+
+    def find_version_candidate(self, folder_name: str, file_name: str) -> dict | None:
+        self.version_calls.append((folder_name, file_name))
+        return {
+            "driveId": "drive-id",
+            "driveItemId": "target-item",
+            "fileName": file_name,
+            "etag": '"etag-refreshed"',
+            "listItemEtag": '"target-list-etag"',
+            "existingColumns": {
+                "@odata.etag": '"target-list-etag"',
+                "Business area": "Current area",
+                "Audience": "Current audience",
+            },
+            "webUrl": "https://example.sharepoint.com/Reviewed/guide.pdf",
+            "folderPath": folder_name,
+            "versions": [{"id": "1.0", "lastModifiedDateTime": "2026-09-21T00:00:00Z"}],
+            "currentVersion": "1.0",
+        }
+
+    def get_version_history(self, drive_id: str, item_id: str) -> list[dict]:
+        return [{"id": "2.0", "lastModifiedDateTime": "2026-09-22T00:00:00Z"}]
+
+    def replace_content(self, drive_id: str, item_id: str, content: bytes, etag: str) -> dict:
+        self.replace_calls.append((drive_id, item_id, content, etag))
+        return {
+            "etag": '"etag-after-content"',
+            "listItemEtag": '"list-etag-after-content"',
+            "existingColumns": {
+                "@odata.etag": '"list-etag-after-content"',
+                "Business area": "Current area",
+                "Audience": "Current audience",
+            },
+            "webUrl": "https://example.sharepoint.com/Reviewed/guide.pdf",
         }
 
 
@@ -107,6 +181,130 @@ class WritebackTests(unittest.TestCase):
         self.assertEqual(repeated["sharePointWriteback"]["audit"][0]["oldValue"], "Old area")
         self.assertEqual(repeated["sharePoint"]["etag"], '"etag-3"')
         self.assertEqual(repeated["sharePoint"]["folderPath"], "Reviewed")
+        self.assertEqual(repeated["sharePoint"]["version"], "2.0")
+
+    def test_staged_source_is_retained_when_archiving_conflicts(self) -> None:
+        store = FakeStore(archive_failure=WritebackConflict("Staging item changed"))
+        service = SharePointWritebackService(store)
+        current = document()
+        current["sharePoint"] = {
+            "driveId": "drive-id",
+            "driveItemId": "staged-item",
+            "etag": '"staged-etag"',
+            "listItemEtag": '"staged-list-etag"',
+            "existingColumns": {},
+            "folderPath": "Staging",
+        }
+        current["sharePointStage"] = {"status": "staged", "folder": "Staging"}
+        service.set_version_action(current, "replace-existing")
+
+        applied = service.apply(
+            current,
+            "sme@example.com",
+            "2026-09-18T20:00:00+00:00",
+            replacement_content=b"revised content",
+        )
+
+        writeback = applied["sharePointWriteback"]
+        self.assertEqual(writeback["status"], "applied")
+        self.assertFalse(writeback["stageSourceArchived"])
+        self.assertTrue(writeback["stageSourceRetained"])
+        self.assertIn("Staging item changed", writeback["stageSourceCleanupError"])
+        self.assertEqual(store.delete_calls, [])
+
+    def test_archive_folder_is_configurable(self) -> None:
+        store = FakeStore()
+        service = SharePointWritebackService(store, archive_folder="Superseded")
+        current = document()
+        current["sharePoint"] = {
+            "driveId": "drive-id",
+            "driveItemId": "staged-item",
+            "etag": '"staged-etag"',
+            "listItemEtag": '"staged-list-etag"',
+            "existingColumns": {},
+            "folderPath": "Staging",
+        }
+        current["sharePointStage"] = {"status": "staged", "folder": "Staging"}
+        service.set_version_action(current, "replace-existing")
+
+        applied = service.apply(
+            current,
+            "sme@example.com",
+            "2026-09-18T20:00:00+00:00",
+            replacement_content=b"revised content",
+        )
+
+        self.assertEqual(store.archive_calls[0][2], "Superseded")
+        self.assertEqual(applied["sharePointStage"]["archiveFolder"], "Superseded")
+
+    def test_approved_revision_replaces_target_content_and_records_sharepoint_version(self) -> None:
+        store = FakeStore()
+        service = SharePointWritebackService(store)
+        current = document()
+        current["sharePoint"] = {
+            "driveId": "drive-id",
+            "driveItemId": "staged-item",
+            "etag": '"staged-etag"',
+            "listItemEtag": '"staged-list-etag"',
+            "existingColumns": {},
+            "folderPath": "Staging",
+        }
+        current["sharePointStage"] = {"status": "staged", "folder": "Staging"}
+
+        service.set_version_action(current, "replace-existing")
+        applied = service.apply(
+            current,
+            "sme@example.com",
+            "2026-09-18T20:00:00+00:00",
+            replacement_content=b"revised content",
+        )
+
+        self.assertEqual(store.version_calls, [("Reviewed", "guide.pdf")])
+        self.assertEqual(store.replace_calls, [("drive-id", "target-item", b"revised content", '"etag-refreshed"')])
+        self.assertEqual(store.calls[0][1], "target-item")
+        self.assertEqual(store.calls[0][3], '"list-etag-after-content"')
+        self.assertEqual(store.move_calls, [])
+        self.assertEqual(store.delete_calls, [])
+        self.assertEqual(len(store.archive_calls), 1)
+        archive_call = store.archive_calls[0]
+        self.assertEqual(archive_call[:4], ("drive-id", "staged-item", "Archive", '"staged-etag"'))
+        self.assertTrue(archive_call[4].startswith("guide (superseded "))
+        self.assertTrue(archive_call[4].endswith(".pdf"))
+        self.assertEqual(applied["sharePoint"]["driveItemId"], "target-item")
+        self.assertEqual(applied["sharePoint"]["version"], "2.0")
+        self.assertEqual(applied["sharePointWriteback"]["sharePointVersion"]["id"], "2.0")
+        self.assertTrue(applied["sharePointWriteback"]["contentReplaced"])
+        self.assertEqual(applied["sharePointRevision"]["status"], "applied")
+        self.assertEqual(applied["sharePointRevision"]["source"]["driveItemId"], "staged-item")
+        self.assertEqual(applied["sharePointStage"]["status"], "revision-applied")
+        self.assertTrue(applied["sharePointStage"]["sourceArchived"])
+        self.assertEqual(applied["sharePointStage"]["archiveFolder"], "Archive")
+        self.assertFalse(applied["sharePointStage"]["sourceRetained"])
+
+    def test_revision_stops_if_target_etag_changed_after_version_review(self) -> None:
+        store = FakeStore()
+        service = SharePointWritebackService(store)
+        current = document()
+        current["sharePoint"] = {
+            "driveId": "drive-id",
+            "driveItemId": "staged-item",
+            "etag": '"staged-etag"',
+            "listItemEtag": '"staged-list-etag"',
+        }
+        current["sharePointStage"] = {"status": "staged", "folder": "Staging"}
+        service.set_version_action(current, "replace-existing")
+        current["sharePointRevision"]["expectedEtag"] = '"stale-etag"'
+
+        with self.assertRaises(WritebackConflict):
+            service.apply(
+                current,
+                "sme@example.com",
+                "2026-09-18T20:00:00+00:00",
+                replacement_content=b"revised content",
+            )
+
+        self.assertEqual(store.replace_calls, [])
+        self.assertEqual(current["sharePointWriteback"]["status"], "conflict")
 
     def test_etag_conflict_is_recorded(self) -> None:
         service = SharePointWritebackService(FakeStore(WritebackConflict("stale")))

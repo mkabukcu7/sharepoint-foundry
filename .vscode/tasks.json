@@ -1,86 +1,731 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Demo: Reset",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.reset_demo",
-      "problemMatcher": [],
-      "group": "test"
-    },
-    {
-      "label": "Demo: Preflight",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_preflight",
-      "problemMatcher": [],
-      "group": "test"
-    },
-    {
-      "label": "Demo: Test",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v",
-      "problemMatcher": [],
-      "group": {
-        "kind": "test",
-        "isDefault": true
-      }
-    },
-    {
-      "label": "Demo: Run",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
-      "isBackground": true,
-      "problemMatcher": [],
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "new",
-        "focus": true,
-        "clear": true
-      }
-    },
-    {
-      "label": "Demo: Run offline fallback",
-      "type": "shell",
-      "command": "$env:AI_PROVIDER='mock'; .\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
-      "isBackground": true,
-      "problemMatcher": [],
-      "group": "build"
-    },
-    {
-      "label": "Demo: Check live Foundry",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_foundry_check",
-      "problemMatcher": [],
-      "group": "test"
-    },
-    {
-      "label": "Demo: Verify",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_preflight; if ($LASTEXITCODE -eq 0) { .\\.venv\\Scripts\\python.exe -m backend.scripts.demo_foundry_check }; if ($LASTEXITCODE -eq 0) { .\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v }",
-      "problemMatcher": [],
-      "group": "test"
-    },
-    {
-      "label": "SharePoint: List columns",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_columns",
-      "problemMatcher": [],
-      "group": "test"
-    },
-    {
-      "label": "SharePoint: List Staging",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_folder Staging",
-      "problemMatcher": [],
-      "group": "test"
-    },
-    {
-      "label": "SharePoint: List Reviewed",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_folder Reviewed",
-      "problemMatcher": [],
-      "group": "test"
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Demo: Reset",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.reset_demo",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Demo: Preflight",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_preflight",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Demo: Test",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v",
+			"problemMatcher": [],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Demo: Run",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "new",
+				"focus": true,
+				"clear": true
+			}
+		},
+		{
+			"label": "Demo: Run offline fallback",
+			"type": "shell",
+			"command": "$env:AI_PROVIDER='mock'; .\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Demo: Check live Foundry",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_foundry_check",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Demo: Verify",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.demo_preflight; if ($LASTEXITCODE -eq 0) { .\\.venv\\Scripts\\python.exe -m backend.scripts.demo_foundry_check }; if ($LASTEXITCODE -eq 0) { .\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v }",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "SharePoint: List columns",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_columns",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "SharePoint: List Staging",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_folder Staging",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "SharePoint: List Reviewed",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m backend.scripts.list_sharepoint_folder Reviewed",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Demo: Run visible terminal",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Azure: Search terminal session",
+			"type": "shell",
+			"command": "Write-Output ('VISIBLE_TERMINAL_PID=' + $PID); Write-Output ('PARENT_PID=' + (Get-CimInstance Win32_Process -Filter \"ProcessId = $PID\").ParentProcessId); Write-Output '--- Azure account ---'; az account show --query \"{name:name, subscriptionId:id, tenantId:tenantId}\" -o table; Write-Output '--- Azure AI Search services ---'; az search service list --resource-group rg-admin-2684 -o table; Write-Output '--- Microsoft.Search provider ---'; az provider show -n Microsoft.Search --query registrationState -o tsv",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Azure: Search terminal session 2",
+			"type": "shell",
+			"command": "Write-Output ('VISIBLE_TERMINAL_PID=' + $PID); Get-Process -Id $PID | Select-Object Id,ProcessName,Path,StartTime | Format-List; Write-Output '--- Azure account ---'; az account show -o table; Write-Output '--- Azure AI Search services ---'; az search service list --resource-group rg-admin-2684 -o table; Write-Output '--- Microsoft.Search provider ---'; az provider show -n Microsoft.Search --query registrationState -o tsv",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Workspace: Persistent command terminal",
+			"type": "shell",
+			"command": "Write-Output ('PERSISTENT_TERMINAL_PID=' + $PID); Write-Output ('WORKING_DIRECTORY=' + (Get-Location).Path); Write-Output 'This terminal is persistent and reserved for shared command history.'; while ($true) { Start-Sleep -Seconds 60 }",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Azure: Check Search quota",
+			"type": "shell",
+			"command": "Write-Output '--- context ---'; az account show -o table; Write-Output '--- Search quota ---'; az quota list --scope /subscriptions/064bf515-5976-4108-a5fb-2f23b3135756/providers/Microsoft.Search/locations/eastus2 -o table 2>&1",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Azure: Record Search quota result",
+			"type": "shell",
+			"command": "$result = az quota list --scope /subscriptions/064bf515-5976-4108-a5fb-2f23b3135756/providers/Microsoft.Search/locations/eastus2 -o json 2>&1; $result; Write-Output ('EXIT_CODE=' + $LASTEXITCODE)",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Azure: Check Search name",
+			"type": "shell",
+			"command": "az search service check-name-availability --name wtw-knowledge-search-2684 -o json 2>&1",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Azure: Check Search name 2",
+			"type": "shell",
+			"command": "az search service check-name-availability --name wtw-knowledge-search-2684 --type searchServices -o json 2>&1",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Install SDK",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pip install -r backend\\requirements.txt",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Check SDK install",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pip show azure-search-documents pydantic pydantic-core; .\\.venv\\Scripts\\python.exe -c \"import azure.search.documents as s; print('SEARCH_SDK_IMPORT_OK', s.__file__)\" 2>&1",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Check SDK install 2",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pip show azure-search-documents pydantic pydantic-core; .\\.venv\\Scripts\\python.exe -c 'import azure.search.documents as s; print(\"SEARCH_SDK_IMPORT_OK\", s.__file__)'",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Install SDK only",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pip install azure-search-documents==11.6.0 --no-deps",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Run focused tests",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m unittest tests.test_search -v",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Validate Bicep",
+			"type": "shell",
+			"command": "az bicep build --file infra\\main.bicep --stdout",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Run full tests",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Inspect changes",
+			"type": "shell",
+			"command": "git status --short; Write-Output '--- diff stat ---'; git diff --stat; Write-Output '--- changed files ---'; git diff --name-only",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Compile Python",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m compileall -q backend\\app backend\\scripts tests; if ($LASTEXITCODE -eq 0) { Write-Output 'PYTHON_COMPILE_OK' }",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Azure validation step 1",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Azure validation step 2",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep LoadPlan",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Azure validation step 3",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep AddValidationSteps",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Bicep core validation",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\recipes\\scripts\\validate-deployment.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -Scope sub -Location eastus2 -Subscription 064bf515-5976-4108-a5fb-2f23b3135756",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Bicep lint and policy fallback",
+			"type": "shell",
+			"command": "Write-Output '--- Bicep lint ---'; az bicep lint --file infra\\main.bicep; Write-Output ('LINT_EXIT_CODE=' + $LASTEXITCODE); Write-Output '--- Policy assignments ---'; az policy assignment list --scope /subscriptions/064bf515-5976-4108-a5fb-2f23b3135756/resourceGroups/rg-admin-2684 --query \"[].{name:name,displayName:displayName,enforcementMode:enforcementMode}\" -o table 2>&1; Write-Output ('POLICY_EXIT_CODE=' + $LASTEXITCODE)",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Bicep lint and policy fallback 2",
+			"type": "shell",
+			"command": "Write-Output '--- Bicep lint ---'; az bicep lint --file infra\\main.bicep; Write-Output ('LINT_EXIT_CODE=' + $LASTEXITCODE); Write-Output '--- Policy assignments ---'; az policy assignment list --scope /subscriptions/064bf515-5976-4108-a5fb-2f23b3135756/resourceGroups/rg-admin-2684 -o table 2>&1; Write-Output ('POLICY_EXIT_CODE=' + $LASTEXITCODE)",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Azure validation complete",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep RunValidation",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Build verification",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m compileall -q backend\\app backend\\scripts tests; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; .\\.venv\\Scripts\\python.exe -m unittest tests.test_search -v",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Finish Azure validation",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep BuildVerification",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Verify Search RBAC",
+			"type": "shell",
+			"command": "az bicep build --file infra\\main.bicep --stdout > $null; if ($LASTEXITCODE -eq 0) { Write-Output 'BICEP_RBAC_CODE_OK'; Write-Output 'Role: Search Index Data Contributor (8ebe5a00-799e-43f5-93ac-243d3dce84a7), conditional on applicationPrincipalId.' }",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Continue Azure validation",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep StaticRoleVerification",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Record validation proof",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep RecordProof",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Resolve validation review",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep ResolveErrors",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Finalize Azure validation",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep UpdateStatus",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Pre-deploy checks",
+			"type": "shell",
+			"command": "Write-Output '--- subscription ---'; az account show -o table; Write-Output '--- resource group ---'; az group show --name rg-admin-2684 -o table; Write-Output '--- existing Search resources ---'; az search service list --resource-group rg-admin-2684 -o table",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Provision Basic service",
+			"type": "shell",
+			"command": "az deployment sub create --name wtw-search --location eastus2 --subscription 064bf515-5976-4108-a5fb-2f23b3135756 --template-file infra\\main.bicep --parameters @infra\\main.parameters.json",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "AI Search: Revalidate corrected template",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Revalidate step 2",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep LoadPlan",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Revalidate step 3",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep AddValidationSteps",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Recheck corrected Bicep",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\recipes\\scripts\\validate-deployment.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -Scope sub -Location eastus2 -Subscription 064bf515-5976-4108-a5fb-2f23b3135756",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Recheck lint and build",
+			"type": "shell",
+			"command": "az bicep lint --file infra\\main.bicep; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; .\\.venv\\Scripts\\python.exe -m compileall -q backend\\app backend\\scripts tests; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; .\\.venv\\Scripts\\python.exe -m unittest tests.test_search -v",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Revalidate workflow 4",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep RunValidation",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Revalidate build",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m compileall -q backend\\app backend\\scripts tests; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; .\\.venv\\Scripts\\python.exe -m unittest tests.test_search -v",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Revalidate workflow 5",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep BuildVerification",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Revalidate RBAC review",
+			"type": "shell",
+			"command": "az bicep build --file infra\\main.bicep --stdout > $null; if ($LASTEXITCODE -eq 0) { Write-Output 'RBAC_REVIEW_OK' }; pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep StaticRoleVerification",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Re-record validation proof",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep RecordProof",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Reconfirm validation",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep ResolveErrors",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Complete corrected validation",
+			"type": "shell",
+			"command": "pwsh -NoProfile -File C:\\Users\\mkabukcu\\.agents\\skills\\azure-validate\\references\\scripts\\workflow.ps1 -WorkspacePath C:\\workspace\\sharepoint+foundry\\sharepoint-foundry -CompletedStep UpdateStatus",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "AI Search: Retry Basic service",
+			"type": "shell",
+			"command": "az deployment sub create --name wtw-search --location eastus2 --subscription 064bf515-5976-4108-a5fb-2f23b3135756 --template-file infra\\main.bicep --parameters @infra\\main.parameters.json",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "SharePoint Version Workflow Tests",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_writeback.py",
+				"tests/test_sharepoint.py",
+				"tests/test_knowledge_librarian.py",
+				"tests/test_search.py",
+				"tests/test_metadata_mvp.py::MetadataReviewTests",
+				"-q"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Interactive SharePoint Version Terminal",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoLogo",
+				"-NoExit",
+				"-Command",
+				"Set-Location 'C:\\workspace\\sharepoint+foundry\\sharepoint-foundry'; Write-Host 'Running SharePoint version workflow tests:'; python -m pytest tests/test_writeback.py tests/test_sharepoint.py tests/test_knowledge_librarian.py tests/test_search.py tests/test_metadata_mvp.py::MetadataReviewTests -q; Write-Host ''; Write-Host 'Interactive repository PowerShell is ready. Type commands below.'"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Interactive SharePoint Version Terminal",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoLogo",
+				"-NoExit",
+				"-Command",
+				"Set-Location C:\\workspace\\sharepoint+foundry\\sharepoint-foundry; Write-Host Running SharePoint version workflow tests; python -m pytest tests/test_writeback.py tests/test_sharepoint.py tests/test_knowledge_librarian.py tests/test_search.py tests/test_metadata_mvp.py::MetadataReviewTests -q; Write-Host; Write-Host Interactive repository PowerShell is ready. Type commands below."
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Smoke Test Librarian Agent v2",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"-c",
+				"import os; from pathlib import Path; from dotenv import load_dotenv; from azure.ai.projects import AIProjectClient; from azure.identity import AzureCliCredential; load_dotenv(Path.cwd()/'.env'); client=AIProjectClient(endpoint=os.environ['FOUNDRY_PROJECT_ENDPOINT'], credential=AzureCliCredential(process_timeout=60)); response=client.get_openai_client().responses.create(model='gpt-5-mini', input='Explain how you handle a possible SharePoint revision when the only evidence is a matching filename.', extra_body={'agent_reference':{'name':'knowledge-librarian-agent','type':'agent_reference','version':'2'}}); answer=(response.output_text or '').strip(); print('--- Librarian v2 response ---'); print(answer); print('--- Agent separation check ---'); names={getattr(agent,'name','') for agent in client.agents.list()}; [print(f'{name}: {\"present\" if name in names else \"MISSING\"}') for name in ('knowledge-librarian-agent','sharepoint-foundry-agent','wtw-metadata-classifier')]; assert all(name in names for name in ('knowledge-librarian-agent','sharepoint-foundry-agent','wtw-metadata-classifier')); assert 'filename' in answer.lower(); assert ('not' in answer.lower() or 'candidate' in answer.lower()); print('SMOKE TEST PASSED')"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Smoke Test Librarian Agent v2",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"C:\\Users\\mkabukcu\\.copilot\\session-state\\15cf98b1-fa7c-4898-8b92-1e6c3d9297c9\\files\\smoke_librarian_v2.py"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Smoke Test Librarian v2 File Harness",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"C:\\Users\\mkabukcu\\.copilot\\session-state\\15cf98b1-fa7c-4898-8b92-1e6c3d9297c9\\files\\smoke_librarian_v2.py"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Generate Librarian v2 Evaluation Suite",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd ai agent eval generate --gen-instruction 'Evaluate the Knowledge Librarian Agent ability to distinguish filename matches from confirmed revisions, require human approval, use verified SharePoint version history, preserve access controls, cite authorized sources, and abstain when evidence is insufficient.' --no-wait --no-prompt",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Inspect Foundry Eval Generate Flags",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd ai agent eval generate --help",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Submit Librarian v2 Evaluation Generation",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd ai agent eval generate --project-endpoint 'https://admin-2684-resource.services.ai.azure.com/api/projects/admin-2684' --agent 'knowledge-librarian-agent' --gen-instruction-file 'prompts\\knowledge-librarian-agent.md' --name 'knowledge-librarian-v2-governance' --out-file 'C:\\Users\\mkabukcu\\.copilot\\session-state\\15cf98b1-fa7c-4898-8b92-1e6c3d9297c9\\files\\librarian-v2-eval.yaml' --no-wait --no-prompt",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Submit Librarian v2 Evaluation with Model",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd ai agent eval generate --project-endpoint 'https://admin-2684-resource.services.ai.azure.com/api/projects/admin-2684' --agent 'knowledge-librarian-agent' --eval-model 'gpt-5-mini' --gen-instruction-file 'prompts\\knowledge-librarian-agent.md' --name 'knowledge-librarian-v2-governance' --out-file 'C:\\Users\\mkabukcu\\.copilot\\session-state\\15cf98b1-fa7c-4898-8b92-1e6c3d9297c9\\files\\librarian-v2-eval.yaml' --no-wait --no-prompt",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Upgrade Foundry Agent CLI Extension",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd extension upgrade azure.ai.agents",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Upgrade Azure Developer CLI",
+			"type": "shell",
+			"command": "winget upgrade --id Microsoft.Azd --exact --silent --accept-package-agreements --accept-source-agreements",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Upgrade Foundry Agent Extension after azd",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd version; azd extension upgrade azure.ai.agents",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Submit Librarian v2 Evaluation after CLI Upgrade",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd ai agent eval generate --project-endpoint 'https://admin-2684-resource.services.ai.azure.com/api/projects/admin-2684' --agent 'knowledge-librarian-agent' --eval-model 'gpt-5-mini' --gen-instruction-file 'prompts\\knowledge-librarian-agent.md' --name 'knowledge-librarian-v2-governance' --out-file 'C:\\Users\\mkabukcu\\.copilot\\session-state\\15cf98b1-fa7c-4898-8b92-1e6c3d9297c9\\files\\librarian-v2-eval.yaml' --no-wait --no-prompt",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Inspect azd Authentication Options",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd auth login --help",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Authenticate azd for Foundry Evaluation",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; $env:AZD_NON_INTERACTIVE='false'; azd auth login --use-device-code --tenant-id '0f74f5e7-70c1-4157-bf2b-5abfa2111f64'",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Submit Authenticated Librarian v2 Evaluation",
+			"type": "shell",
+			"command": "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd ai agent eval generate --project-endpoint 'https://admin-2684-resource.services.ai.azure.com/api/projects/admin-2684' --agent 'knowledge-librarian-agent' --eval-model 'gpt-5-mini' --gen-instruction-file 'prompts\\knowledge-librarian-agent.md' --name 'knowledge-librarian-v2-governance' --out-file 'C:\\Users\\mkabukcu\\.copilot\\session-state\\15cf98b1-fa7c-4898-8b92-1e6c3d9297c9\\files\\librarian-v2-eval.yaml' --no-wait --no-prompt",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Foundry Dependency Check",
+			"type": "shell",
+			"command": "pwsh.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"C:\\Users\\mkabukcu\\.agents\\skills\\microsoft-foundry\\scripts\\check-and-setup-dependencies.ps1"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Local Librarian Chat",
+			"type": "shell",
+			"command": "C:\\workspace\\sharepoint+foundry\\sharepoint-foundry\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_librarian_chat.py",
+				"tests/test_knowledge_librarian.py",
+				"tests/test_writeback.py",
+				"tests/test_sharepoint.py",
+				"-q"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Local Librarian Chat",
+			"type": "shell",
+			"command": "C:\\workspace\\sharepoint+foundry\\sharepoint-foundry\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_librarian_chat.py",
+				"tests/test_knowledge_librarian.py",
+				"tests/test_writeback.py",
+				"tests/test_sharepoint.py",
+				"-q"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Retest Local Librarian Chat",
+			"type": "shell",
+			"command": "C:\\workspace\\sharepoint+foundry\\sharepoint-foundry\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_librarian_chat.py",
+				"tests/test_knowledge_librarian.py",
+				"tests/test_writeback.py",
+				"tests/test_sharepoint.py",
+				"-q"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Local Librarian Chat on 8010",
+			"type": "shell",
+			"command": "C:\\workspace\\sharepoint+foundry\\sharepoint-foundry\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-m",
+				"uvicorn",
+				"backend.app.librarian_chat:app",
+				"--host",
+				"127.0.0.1",
+				"--port",
+				"8010",
+				"--log-level",
+				"info"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Final Librarian Chat Tests",
+			"type": "shell",
+			"command": "C:\\workspace\\sharepoint+foundry\\sharepoint-foundry\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_librarian_chat.py",
+				"tests/test_knowledge_librarian.py",
+				"-q"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Librarian chat (rw + guardrails)",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.librarian_chat:app --host 127.0.0.1 --port 8010",
+			"isBackground": true,
+			"group": "none"
+		},
+		{
+			"label": "Librarian chat (intake triage)",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.librarian_chat:app --host 127.0.0.1 --port 8010",
+			"isBackground": true,
+			"group": "none"
+		},
+		{
+			"label": "Librarian chat (triage reconciled)",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.librarian_chat:app --host 127.0.0.1 --port 8010",
+			"isBackground": true,
+			"group": "none"
+		}
+	]
 }

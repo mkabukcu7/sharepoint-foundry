@@ -9,9 +9,30 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
-from backend.app.models.document import MetadataReviewUpdate, SharePointStagingImport
-from backend.app.services.reviews import approve_metadata_review, metadata_review, update_field_review
-from backend.app.services.reviews import retry_metadata_writeback
+from backend.app.models.document import (
+    ClassificationFlagResolution,
+    MetadataApproval,
+    MetadataReviewUpdate,
+    SearchQuery,
+    SharePointStagingImport,
+    SharePointVersionActionUpdate,
+)
+from backend.app.services.reviews import (
+    ALL_REVIEW_FIELDS,
+    approve_metadata_review,
+    get_sharepoint_version_candidate,
+    metadata_review,
+    resolve_classification_flag,
+    retry_metadata_writeback,
+    update_field_review,
+    update_version_action,
+)
+from backend.app.services.search import (
+    ApprovedKnowledgeSearch,
+    SearchConfigurationError,
+    SearchOperationError,
+    is_search_eligible,
+)
 from backend.app.services.sharepoint import SharePointClient
 from backend.app.services.writeback import SharePointWritebackService, WritebackConflict, WritebackError
 from backend.app.services.storage import DATA_PATH, SAMPLE_DOCS, load_documents, save_documents
@@ -190,12 +211,80 @@ def review_document_field(document_name: str, update: MetadataReviewUpdate) -> d
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
-@app.post("/api/documents/{document_name}/review/approve")
-def approve_document_metadata(document_name: str) -> dict:
+@app.get("/api/documents/{document_name}/sharepoint/version-candidate")
+def sharepoint_version_candidate(document_name: str) -> dict:
     if Path(document_name).name != document_name:
         raise HTTPException(status_code=400, detail="Invalid document name")
     try:
-        return approve_metadata_review(DATA_PATH, SAMPLE_DOCS, document_name, _writeback_service())
+        service = _writeback_service(required=True)
+        candidate = get_sharepoint_version_candidate(DATA_PATH, document_name, service)
+        return {"candidate": candidate}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Document not found") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WritebackError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+
+@app.post("/api/documents/{document_name}/review/flags/resolve")
+def resolve_document_classification_flag(
+    document_name: str,
+    resolution: ClassificationFlagResolution,
+) -> dict:
+    if Path(document_name).name != document_name:
+        raise HTTPException(status_code=400, detail="Invalid document name")
+    try:
+        return resolve_classification_flag(
+            DATA_PATH,
+            SAMPLE_DOCS,
+            document_name,
+            resolution.flagId,
+            resolution.reviewer,
+            resolution.note,
+        )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Document or classification flag not found") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.patch("/api/documents/{document_name}/review/version-action")
+def review_document_version_action(
+    document_name: str,
+    update: SharePointVersionActionUpdate,
+) -> dict:
+    if Path(document_name).name != document_name:
+        raise HTTPException(status_code=400, detail="Invalid document name")
+    try:
+        return update_version_action(
+            DATA_PATH,
+            document_name,
+            update.action,
+            _writeback_service(required=True),
+        )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Document not found") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WritebackConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except WritebackError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/api/documents/{document_name}/review/approve")
+def approve_document_metadata(document_name: str, approval: MetadataApproval) -> dict:
+    if Path(document_name).name != document_name:
+        raise HTTPException(status_code=400, detail="Invalid document name")
+    try:
+        result = approve_metadata_review(
+            DATA_PATH,
+            SAMPLE_DOCS,
+            document_name,
+            _writeback_service(),
+            reviewer=approval.reviewer.strip(),
+        )
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Document not found") from error
     except ValueError as error:
@@ -204,6 +293,52 @@ def approve_document_metadata(document_name: str) -> dict:
         raise HTTPException(status_code=409, detail=str(error)) from error
     except WritebackError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
+    result["searchIndex"] = _index_single_document(document_name)
+    return result
+
+
+def _index_single_document(document_name: str) -> dict:
+    """Index the document that was just approved, so it becomes answerable at once.
+
+    Indexing failures must not undo an approval that already succeeded, so this
+    reports the outcome rather than raising.
+    """
+    try:
+        search = ApprovedKnowledgeSearch()
+        search.ensure_index()
+    except SearchConfigurationError as error:
+        return {"status": "skipped", "reason": f"Search is not configured: {error}"}
+
+    documents = load_documents(DATA_PATH)
+    document = next(
+        (item for item in documents if item.get("documentName") == document_name),
+        None,
+    )
+    if document is None:
+        return {"status": "skipped", "reason": "Document not found"}
+
+    path = SAMPLE_DOCS / document_name
+    text = extract_text(path) if path.is_file() else ""
+    if not is_search_eligible(document):
+        return {"status": "blocked", "reason": "Document is not human-approved and published."}
+    try:
+        chunks = search.index_document(document, text)
+    except (SearchOperationError, SearchConfigurationError) as error:
+        status = {"status": "failed", "error": str(error)}
+        _record_index_status(document_name, status)
+        return status
+    status = {"status": "indexed", "index": search.settings.index_name, "chunks": chunks}
+    _record_index_status(document_name, status)
+    return status
+
+
+def _record_index_status(document_name: str, status: dict) -> None:
+    documents = load_documents(DATA_PATH)
+    for document in documents:
+        if document.get("documentName") == document_name:
+            document["searchIndex"] = status
+            break
+    save_documents(documents, DATA_PATH)
 
 
 @app.post("/api/documents/{document_name}/review/writeback/retry")
@@ -211,7 +346,12 @@ def retry_document_writeback(document_name: str) -> dict:
     if Path(document_name).name != document_name:
         raise HTTPException(status_code=400, detail="Invalid document name")
     try:
-        return retry_metadata_writeback(DATA_PATH, document_name, _writeback_service(required=True))
+        return retry_metadata_writeback(
+            DATA_PATH,
+            SAMPLE_DOCS,
+            document_name,
+            _writeback_service(required=True),
+        )
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Document not found") from error
     except ValueError as error:
@@ -228,6 +368,83 @@ def ingest() -> dict:
 
     docs = run_ingestion()
     return {"status": "ok", "documents": len(docs)}
+
+
+@app.post("/api/search/index")
+def index_approved_documents() -> dict:
+    try:
+        search = ApprovedKnowledgeSearch()
+        search.ensure_index()
+    except SearchConfigurationError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    documents = load_documents(DATA_PATH)
+    indexed = 0
+    blocked = 0
+    failed = 0
+    removed = 0
+    for document in documents:
+        path = SAMPLE_DOCS / document.get("documentName", "")
+        text = extract_text(path) if path.is_file() else ""
+        document["metadataReview"] = metadata_review(document, text)
+        if not is_search_eligible(document):
+            # Approval status is frozen into each chunk at index time, so a
+            # document that loses approval must be withdrawn from the index too.
+            withdrawn = 0
+            try:
+                previous = document.get("searchIndex")
+                previous_count = previous.get("chunks", 0) if isinstance(previous, dict) else 0
+                withdrawn = search.remove_document(
+                    document.get("documentName", ""), known_chunk_count=int(previous_count or 0)
+                )
+            except SearchOperationError as error:
+                document["searchIndex"] = {"status": "failed", "error": str(error)}
+                failed += 1
+                continue
+            removed += withdrawn
+            document["searchIndex"] = {
+                "status": "blocked",
+                "reason": "Document is not human-approved and published.",
+                "removedChunks": withdrawn,
+            }
+            blocked += 1
+            continue
+        try:
+            chunks = search.index_document(document, text)
+        except SearchOperationError as error:
+            document["searchIndex"] = {"status": "failed", "error": str(error)}
+            failed += 1
+            continue
+        document["searchIndex"] = {
+            "status": "indexed",
+            "index": search.settings.index_name,
+            "chunks": chunks,
+        }
+        indexed += 1
+    save_documents(documents, DATA_PATH)
+    return {
+        "status": "ok" if failed == 0 else "partial",
+        "indexed": indexed,
+        "blocked": blocked,
+        "failed": failed,
+        "removed": removed,
+    }
+
+
+@app.post("/api/search/query")
+def query_approved_documents(request: SearchQuery) -> dict:
+    try:
+        results = ApprovedKnowledgeSearch().query(request.question, request.top)
+    except SearchConfigurationError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except SearchOperationError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    return {
+        "question": request.question,
+        "answerable": bool(results),
+        "message": None if results else "No approved evidence was found for this question.",
+        "citations": results,
+    }
 
 
 def _writeback_service(required: bool = False) -> SharePointWritebackService | None:
@@ -248,15 +465,20 @@ def _writeback_service(required: bool = False) -> SharePointWritebackService | N
         for field, column in column_map.items()
     ):
         raise ValueError("SHAREPOINT_COLUMN_MAP must map metadata fields to SharePoint internal column names")
-    unsupported_fields = set(column_map).difference({"businessArea", "audience", "language", "author", "countryOfOrigin"})
+    unsupported_fields = set(column_map).difference(ALL_REVIEW_FIELDS)
     if unsupported_fields:
         raise ValueError(f"SHAREPOINT_COLUMN_MAP contains unsupported fields: {', '.join(sorted(unsupported_fields))}")
     staging_folder = os.getenv("SHAREPOINT_STAGING_FOLDER_NAME", "Staging").strip()
     reviewed_folder = os.getenv("SHAREPOINT_REVIEWED_FOLDER_NAME", "Reviewed").strip()
+    archive_folder = os.getenv("SHAREPOINT_ARCHIVE_FOLDER_NAME", "Archive").strip()
     if not staging_folder or "/" in staging_folder or "\\" in staging_folder:
         raise ValueError("SHAREPOINT_STAGING_FOLDER_NAME must be a single folder name")
     if not reviewed_folder or "/" in reviewed_folder or "\\" in reviewed_folder:
         raise ValueError("SHAREPOINT_REVIEWED_FOLDER_NAME must be a single folder name")
+    if not archive_folder or "/" in archive_folder or "\\" in archive_folder:
+        raise ValueError("SHAREPOINT_ARCHIVE_FOLDER_NAME must be a single folder name")
+    if len({staging_folder.casefold(), reviewed_folder.casefold(), archive_folder.casefold()}) != 3:
+        raise ValueError("Staging, Reviewed and Archive must be three distinct folders")
     hostname = os.getenv("SHAREPOINT_HOSTNAME", "").strip()
     if not hostname:
         raise ValueError("SHAREPOINT_HOSTNAME is required when SharePoint write-back is enabled")
@@ -270,6 +492,7 @@ def _writeback_service(required: bool = False) -> SharePointWritebackService | N
         column_map=column_map,
         staging_folder=staging_folder,
         reviewed_folder=reviewed_folder,
+        archive_folder=archive_folder,
     )
 
 

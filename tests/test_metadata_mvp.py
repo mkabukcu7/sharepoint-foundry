@@ -18,7 +18,14 @@ from backend.app.services.ai_providers import (
 )
 from backend.app.services.extractors import extract_author, extract_labeled_value, extract_text
 from backend.app.services.lifecycle import lifecycle_metadata
-from backend.app.services.reviews import REVIEW_FIELDS, approve_metadata_review, metadata_review, update_field_review
+from backend.app.services.reviews import (
+    ALL_REVIEW_FIELDS,
+    REVIEW_FIELDS,
+    approve_metadata_review,
+    metadata_review,
+    resolve_classification_flag,
+    update_field_review,
+)
 from backend.app.services.storage import load_documents, save_documents
 from backend.scripts.ingest import run_ingestion
 
@@ -36,6 +43,18 @@ EXPECTED_AGENT_FIELDS = {
     "countryOfOrigin",
     "customMetadata",
 }
+
+APPROVABLE_CLASSIFICATION = {
+    "materialType": {"value": "Blog", "confidence": 0.9, "evidence": "Stated in the document."},
+    "topics": [{"value": "2012 Pension Reform", "confidence": 0.9, "evidence": "Stated in the document."}],
+    "reviewRequired": False,
+    "riskFlags": [],
+}
+
+
+def resolve_every_review_field(data_path: Path, source_dir: Path, document_name: str) -> None:
+    for field in ALL_REVIEW_FIELDS:
+        update_field_review(data_path, source_dir, document_name, field, "accepted")
 
 
 class MetadataProviderTests(unittest.TestCase):
@@ -192,6 +211,65 @@ class MetadataReviewTests(unittest.TestCase):
         self.assertEqual(review["fields"]["author"]["support"], "missing")
         self.assertEqual(review["fields"]["businessArea"]["evidence"], "Business area: Claims")
 
+    def test_approval_passes_staged_revision_content_to_writeback(self) -> None:
+        class WritebackSpy:
+            def __init__(self) -> None:
+                self.replacement_content = None
+
+            def apply(
+                self,
+                document: dict,
+                reviewer: str,
+                reviewed_at: str,
+                replacement_content: bytes | None = None,
+            ) -> dict:
+                self.replacement_content = replacement_content
+                return document
+
+        review_fields = {
+            key: {"value": value, "reviewDecision": "accepted", "support": "confirmed"}
+            for key, value in {
+                "businessArea": "Claims",
+                "audience": "Advisor",
+                "language": "English",
+                "author": "Sample Author",
+                "countryOfOrigin": "Canada",
+                "materialType": "Blog",
+                "topics": ["2012 Pension Reform"],
+                "businesses": [],
+                "industries": [],
+                "geographies": [],
+                "collections": [],
+                "languages": [],
+            }.items()
+        }
+        staged = {
+            "documentName": "guide.pdf",
+            "businessArea": "Claims",
+            "audience": "Advisor",
+            "language": "English",
+            "author": "Sample Author",
+            "countryOfOrigin": "Canada",
+            "wtwClassification": dict(APPROVABLE_CLASSIFICATION),
+            "metadataReview": {"status": "needs-review", "fields": review_fields},
+            "sharePoint": {"driveId": "drive-id", "driveItemId": "staged-item"},
+            "sharePointWritebackEnabled": True,
+            "sharePointRevision": {"action": "replace-existing"},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_dir = root / "documents"
+            source_dir.mkdir()
+            (source_dir / "guide.pdf").write_bytes(b"approved replacement bytes")
+            data_path = root / "metadata.json"
+            save_documents([staged], data_path)
+            service = WritebackSpy()
+            with patch("backend.app.services.reviews._document_text", return_value=""):
+                approved = approve_metadata_review(data_path, source_dir, "guide.pdf", service, reviewer="Test reviewer")
+
+        self.assertEqual(service.replacement_content, b"approved replacement bytes")
+        self.assertEqual(approved["metadataReview"]["status"], "approved")
+
     def test_review_field_edits_persist_and_require_resolution_before_approval(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -206,22 +284,27 @@ class MetadataReviewTests(unittest.TestCase):
             self.assertEqual(updated["metadataReview"]["fields"]["author"]["originalValue"], "Unknown")
             self.assertEqual(updated["metadataReview"]["fields"]["author"]["reviewDecision"], "edited")
             with self.assertRaisesRegex(ValueError, "Resolve all review fields"):
-                approve_metadata_review(data_path, source_dir, "guide.pdf")
+                approve_metadata_review(data_path, source_dir, "guide.pdf", reviewer="Test reviewer")
 
     def test_review_approval_records_reviewer_after_all_fields_are_resolved(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             data_path = root / "metadata.json"
             source_dir = root / "documents"
-            save_documents([{"documentName": "guide.pdf", **{field: "Sample value" for field in REVIEW_FIELDS}}], data_path)
-            for field in REVIEW_FIELDS:
-                update_field_review(data_path, source_dir, "guide.pdf", field, "accepted")
+            save_documents([{
+                "documentName": "guide.pdf",
+                "wtwClassification": dict(APPROVABLE_CLASSIFICATION),
+                **{field: "Sample value" for field in REVIEW_FIELDS},
+            }], data_path)
+            resolve_every_review_field(data_path, source_dir, "guide.pdf")
 
-            approved = approve_metadata_review(data_path, source_dir, "guide.pdf")
+            approved = approve_metadata_review(data_path, source_dir, "guide.pdf", reviewer="Test reviewer")
 
             self.assertEqual(approved["metadataReview"]["status"], "approved")
-            self.assertEqual(approved["metadataReview"]["reviewedBy"], "Demo reviewer")
+            self.assertEqual(approved["metadataReview"]["reviewedBy"], "Test reviewer")
             self.assertIsNotNone(approved["metadataReview"]["reviewedAt"])
+            self.assertEqual(approved["approvedTaxonomy"]["topics"], ["2012 Pension Reform"])
+            self.assertEqual(approved["approvedTaxonomy"]["materialType"], "Blog")
 
     def test_existing_sharepoint_document_is_not_written_without_per_file_opt_in(self) -> None:
         class RejectWriteback:
@@ -235,16 +318,17 @@ class MetadataReviewTests(unittest.TestCase):
             save_documents([{
                 "documentName": "guide.pdf",
                 "sharePoint": {"driveId": "drive-id", "driveItemId": "item-id"},
+                "wtwClassification": dict(APPROVABLE_CLASSIFICATION),
                 **{field: "Sample value" for field in REVIEW_FIELDS},
             }], data_path)
-            for field in REVIEW_FIELDS:
-                update_field_review(data_path, source_dir, "guide.pdf", field, "accepted")
+            resolve_every_review_field(data_path, source_dir, "guide.pdf")
 
             approved = approve_metadata_review(
                 data_path,
                 source_dir,
                 "guide.pdf",
                 RejectWriteback(),
+                reviewer="Test reviewer",
             )
 
             self.assertEqual(approved["metadataReview"]["status"], "approved")
@@ -284,7 +368,7 @@ class DocumentRouteTests(unittest.TestCase):
         self.assertTrue(claims["countryOfOrigin"])
         self.assertEqual(claims["customMetadata"], {})
         self.assertIn(claims["metadataReview"]["status"], {"needs-review", "approved"})
-        self.assertEqual(set(claims["metadataReview"]["fields"]), {"businessArea", "audience", "language", "author", "countryOfOrigin"})
+        self.assertEqual(set(claims["metadataReview"]["fields"]), set(ALL_REVIEW_FIELDS))
 
     def test_review_routes_persist_field_decisions_and_guard_approval(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -305,7 +389,10 @@ class DocumentRouteTests(unittest.TestCase):
                     "/api/documents/guide.pdf/review",
                     json={"field": "author", "decision": "edited", "value": "Sample Author"},
                 )
-                approval_response = self.client.post("/api/documents/guide.pdf/review/approve")
+                approval_response = self.client.post(
+                    "/api/documents/guide.pdf/review/approve",
+                    json={"reviewer": "Test reviewer"},
+                )
 
             self.assertEqual(update_response.status_code, 200)
             self.assertEqual(update_response.json()["author"], "Sample Author")
@@ -567,3 +654,4 @@ class DocumentRouteTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
