@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Knowledge Librarian Chat</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #192b3b;
+      background: #f3f6f8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .chat-shell {
+      width: min(900px, 100%);
+      height: min(820px, calc(100vh - 48px));
+      min-height: 480px;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border: 1px solid #d9e1e7;
+      border-radius: 16px;
+      box-shadow: 0 12px 40px #20384d18;
+      overflow: hidden;
+    }
+    header { padding: 22px 26px 16px; border-bottom: 1px solid #e5ebef; }
+    h1 { margin: 0 0 6px; font-size: 1.35rem; }
+    .subtitle { color: #536879; margin: 0; font-size: .93rem; }
+    .notice {
+      margin: 14px 20px 0;
+      padding: 10px 13px;
+      border: 1px solid #e6c77e;
+      border-radius: 8px;
+      background: #fff8e6;
+      color: #574319;
+      font-size: .85rem;
+      line-height: 1.45;
+    }
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .bubble {
+      max-width: min(78%, 680px);
+      padding: 12px 15px;
+      border-radius: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .assistant { align-self: flex-start; background: #eef3f6; }
+    .user { align-self: flex-end; color: white; background: #147d83; }
+    .pending { color: #536879; font-style: italic; }
+    form { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid #e5ebef; }
+    textarea {
+      flex: 1;
+      resize: vertical;
+      min-height: 48px;
+      max-height: 150px;
+      padding: 12px;
+      border: 1px solid #bdcbd5;
+      border-radius: 9px;
+      font: inherit;
+    }
+    button {
+      align-self: flex-end;
+      min-height: 46px;
+      border: 0;
+      border-radius: 9px;
+      padding: 0 19px;
+      color: white;
+      background: #147d83;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .55; cursor: wait; }
+    .citations {
+      align-self: flex-start;
+      max-width: min(78%, 680px);
+      border: 1px solid #cfd8dc;
+      border-left: 4px solid #5c6bc0;
+      border-radius: 10px;
+      background: #f5f6fb;
+      padding: 11px 15px;
+      font-size: .85rem;
+    }
+    .citations h2 {
+      margin: 0 0 6px;
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #3d4a8c;
+    }
+    .citations ol { margin: 0; padding-left: 18px; }
+    .citations li { margin-bottom: 3px; }
+    .citation-meta { color: #566; }
+
+    .plan {
+      align-self: flex-start;
+      max-width: min(78%, 680px);
+      border: 1px solid #b7cfd6;
+      border-left: 4px solid #147d83;
+      border-radius: 10px;
+      background: #f2f9fa;
+      padding: 13px 15px;
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+    .plan h2 { margin: 0 0 8px; font-size: .95rem; }
+    .plan table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .plan th, .plan td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #dbe7ea; vertical-align: top; }
+    .plan th { color: #536879; font-weight: 600; }
+    .plan .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .plan input {
+      flex: 1 1 180px;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid #bdcbd5;
+      border-radius: 8px;
+      font: inherit;
+    }
+    .plan button { min-height: 38px; padding: 0 14px; }
+    .plan button.reject { background: #6b7c89; }
+    .plan .outcome { margin: 8px 0 0; white-space: pre-wrap; }
+    .plan .outcome.error { color: #a12622; }
+    .guardrail { border-left: 4px solid #c2882f; background: #fff8e6; }
+    .toolbar { display: flex; gap: 8px; align-items: center; padding: 10px 20px 0; }
+    .toolbar button { min-height: 34px; padding: 0 12px; font-size: .85rem; background: #2c5f86; }
+    .triage {
+      align-self: stretch;
+      border: 1px solid #b7cfd6;
+      border-left: 4px solid #2c5f86;
+      border-radius: 10px;
+      background: #f5f9fc;
+      padding: 13px 15px;
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+    .triage h2 { margin: 0 0 4px; font-size: .95rem; }
+    .triage .counts { color: #536879; margin: 0 0 10px; font-size: .82rem; }
+    .triage .item { border-top: 1px solid #dde7ee; padding: 9px 0; }
+    .triage .item:first-of-type { border-top: 0; }
+    .triage .name { font-weight: 600; }
+    .triage .badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: .74rem;
+      font-weight: 600;
+    }
+    .badge.ready { background: #d8efdc; color: #1d5b2c; }
+    .badge.attention { background: #fde8d6; color: #8a4213; }
+    .badge.overdue { background: #fbd9d7; color: #8f211c; }
+    .badge.due { background: #fdf0cf; color: #77591a; }
+    .triage ul { margin: 5px 0 0; padding-left: 19px; color: #4a5c6b; }
+    #status { min-height: 20px; margin: 0; padding: 0 20px 10px; color: #536879; font-size: .82rem; }
+    #status.error { color: #a12622; }
+    @media (max-width: 600px) {
+      body { padding: 0; }
+      .chat-shell { height: 100vh; min-height: 400px; border: 0; border-radius: 0; }
+      header { padding: 18px; }
+      .bubble { max-width: 90%; }
+      form { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="chat-shell">
+    <header>
+      <h1>Knowledge Librarian</h1>
+      <p class="subtitle">Local chat · Foundry prompt agent · Conversation held in server memory</p>
+    </header>
+    <aside class="notice">
+      Local prototype: the librarian reads the configured SharePoint Staging and Reviewed folders and can
+      <strong>propose</strong> metadata changes. Nothing is written until a named reviewer approves a plan below.
+      Permissions are not trimmed per user, and permissions, sharing, sensitivity labels, retention and deletions are never changed.
+    </aside>
+    <section id="messages" aria-live="polite" aria-label="Conversation"></section>
+    <div class="toolbar">
+      <button id="triageButton" type="button">Run intake triage</button>
+    </div>
+    <p id="status" role="status"></p>
+    <form id="chatForm">
+      <textarea id="messageInput" maxlength="2000" placeholder="Ask the librarian…" aria-label="Message" required></textarea>
+      <button id="sendButton" type="submit">Send</button>
+    </form>
+  </main>
+  <script>
+    const messages = document.getElementById("messages");
+    const form = document.getElementById("chatForm");
+    const input = document.getElementById("messageInput");
+    const sendButton = document.getElementById("sendButton");
+    const status = document.getElementById("status");
+    const triageButton = document.getElementById("triageButton");
+    let sessionId = null;
+
+    function addMessage(role, text, extraClass = "") {
+      const bubble = document.createElement("article");
+      bubble.className = `bubble ${role} ${extraClass}`.trim();
+      bubble.textContent = text;
+      messages.append(bubble);
+      messages.scrollTop = messages.scrollHeight;
+      return bubble;
+    }
+
+    function addCitations(citations) {
+      const card = document.createElement("article");
+      card.className = "citations";
+      const title = document.createElement("h2");
+      title.textContent = `Answered from ${citations.length} approved source${citations.length === 1 ? "" : "s"}`;
+      card.append(title);
+      const list = document.createElement("ol");
+      citations.forEach(citation => {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = citation.sourceUrl || "#";
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = citation.documentName;
+        item.append(link);
+        const meta = document.createElement("span");
+        meta.className = "citation-meta";
+        const parts = [`section ${citation.section}`];
+        if (citation.sourceVersion) parts.push(`version ${citation.sourceVersion}`);
+        meta.textContent = ` — ${parts.join(" · ")}`;
+        item.append(meta);
+        list.append(item);
+      });
+      card.append(list);
+      messages.append(card);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addPlan(proposal) {
+      const card = document.createElement("article");
+      card.className = "plan";
+      const title = document.createElement("h2");
+      title.textContent = `Proposed metadata change — ${proposal.documentName} (${proposal.folder})`;
+      card.append(title);
+
+      const table = document.createElement("table");
+      const head = document.createElement("tr");
+      ["Field", "Current", "Proposed"].forEach(label => {
+        const cell = document.createElement("th");
+        cell.textContent = label;
+        head.append(cell);
+      });
+      table.append(head);
+      proposal.changes.forEach(change => {
+        const row = document.createElement("tr");
+        [change.label, change.currentValue || "(empty)", change.proposedValue].forEach(value => {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.append(cell);
+        });
+        table.append(row);
+      });
+      card.append(table);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const reviewer = document.createElement("input");
+      reviewer.type = "text";
+      reviewer.maxLength = 120;
+      reviewer.placeholder = "Your name (recorded as reviewer)";
+      const approve = document.createElement("button");
+      approve.type = "button";
+      approve.textContent = "Approve";
+      const reject = document.createElement("button");
+      reject.type = "button";
+      reject.className = "reject";
+      reject.textContent = "Reject";
+      actions.append(reviewer, approve, reject);
+      card.append(actions);
+
+      const outcome = document.createElement("p");
+      outcome.className = "outcome";
+      card.append(outcome);
+
+      async function decide(decision) {
+        if (decision === "approve" && !reviewer.value.trim()) {
+          outcome.textContent = "Enter your name before approving.";
+          outcome.classList.add("error");
+          return;
+        }
+        approve.disabled = true;
+        reject.disabled = true;
+        outcome.classList.remove("error");
+        outcome.textContent = decision === "approve" ? "Applying approved change…" : "Rejecting…";
+        try {
+          const response = await fetch(`/api/chat/proposals/${proposal.proposalId}/${decision}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId, reviewer: reviewer.value.trim() || "Reviewer" })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || "The decision could not be recorded");
+          outcome.textContent = result.summary;
+          actions.remove();
+        } catch (error) {
+          outcome.textContent = error.message;
+          outcome.classList.add("error");
+          approve.disabled = false;
+          reject.disabled = false;
+        }
+      }
+
+      approve.addEventListener("click", () => decide("approve"));
+      reject.addEventListener("click", () => decide("reject"));
+      messages.append(card);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addTriage(report) {
+      const card = document.createElement("article");
+      card.className = "triage";
+      const title = document.createElement("h2");
+      title.textContent = "Intake triage — Staging";
+      card.append(title);
+
+      const counts = document.createElement("p");
+      counts.className = "counts";
+      counts.textContent =
+        `${report.counts.staged} staged · ${report.counts.readyForApproval} ready for approval · ` +
+        `${report.counts.needsAttention} need attention · ${report.counts.overdue} overdue · ` +
+        `${report.counts.dueSoon} due soon · confidence threshold ${report.confidenceThreshold} · ` +
+        `SLA ${report.reviewSlaDays} days`;
+      card.append(counts);
+
+      if (!report.items.length) {
+        const empty = document.createElement("p");
+        empty.textContent = "Nothing is currently staged for review.";
+        card.append(empty);
+      }
+
+      report.items.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "item";
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = item.documentName;
+
+        const disposition = document.createElement("span");
+        disposition.className = `badge ${item.disposition === "ready-for-approval" ? "ready" : "attention"}`;
+        disposition.textContent = item.disposition === "ready-for-approval" ? "Ready" : "Needs attention";
+        name.append(disposition);
+
+        if (item.review.state === "overdue" || item.review.state === "due") {
+          const sla = document.createElement("span");
+          sla.className = `badge ${item.review.state}`;
+          sla.textContent = item.review.state === "overdue"
+            ? `Overdue · ${item.review.waitingDays}d`
+            : `Due · ${item.review.waitingDays}d`;
+          name.append(sla);
+        }
+        row.append(name);
+
+        const action = document.createElement("div");
+        action.textContent = item.recommendedAction;
+        row.append(action);
+
+        if (item.blockers.length) {
+          const list = document.createElement("ul");
+          item.blockers.forEach(blocker => {
+            const entry = document.createElement("li");
+            entry.textContent = blocker;
+            list.append(entry);
+          });
+          row.append(list);
+        }
+        card.append(row);
+      });
+
+      messages.append(card);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    triageButton.addEventListener("click", async () => {
+      triageButton.disabled = true;
+      status.classList.remove("error");
+      status.textContent = "Running intake triage…";
+      try {
+        const response = await fetch("/api/librarian/triage");
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Intake triage failed");
+        addTriage(result);
+        status.textContent = "";
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add("error");
+      } finally {
+        triageButton.disabled = false;
+      }
+    });
+
+    async function startSession() {
+      status.textContent = "Connecting to local chat service…";
+      try {
+        const response = await fetch("/api/chat/sessions", { method: "POST" });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Unable to start a chat session");
+        sessionId = result.sessionId;
+        status.textContent = "";
+        addMessage("assistant", "Hello. I’m the Knowledge Librarian. I can list what is in Staging and Reviewed, report metadata and SharePoint version history, and propose metadata changes for a reviewer to approve. I never change permissions, labels, retention, or delete documents.");
+        input.focus();
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add("error");
+      }
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message || !sessionId || sendButton.disabled) return;
+      addMessage("user", message);
+      input.value = "";
+      sendButton.disabled = true;
+      status.classList.remove("error");
+      status.textContent = "Librarian is responding…";
+      const pending = addMessage("assistant", "Thinking…", "pending");
+      try {
+        const response = await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, message })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Chat request failed");
+        pending.textContent = result.reply;
+        pending.classList.remove("pending");
+        if (result.guardrail) pending.classList.add("guardrail");
+        if (result.citations && result.citations.length) addCitations(result.citations);
+        if (result.proposal) addPlan(result.proposal);
+        status.textContent = "";
+      } catch (error) {
+        pending.remove();
+        status.textContent = error.message;
+        status.classList.add("error");
+        input.value = message;
+      } finally {
+        sendButton.disabled = false;
+        input.focus();
+      }
+    });
+
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    startSession();
+  </script>
+</body>
+</html>

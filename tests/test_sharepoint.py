@@ -48,7 +48,7 @@ class FakeSession:
         self.requested_urls: list[str] = []
         self.patch_calls: list[tuple[str, dict, dict]] = []
         self.post_calls: list[tuple[str, dict]] = []
-        self.put_calls: list[tuple[str, bytes]] = []
+        self.put_calls: list[tuple[str, bytes, dict]] = []
         self.delete_calls: list[str] = []
 
     def get(self, url: str, timeout: int, allow_redirects: bool = True) -> FakeResponse:
@@ -59,6 +59,13 @@ class FakeSession:
             return FakeResponse({"value": [{"id": "drive-id", "name": "Documents"}]})
         if url.endswith("/drives/drive-id/list"):
             return FakeResponse({"id": "list-id"})
+        if "/items/" in url and "/versions?" in url:
+            return FakeResponse({"value": [{
+                "id": "1.0",
+                "lastModifiedDateTime": "2026-09-22T05:55:00Z",
+                "lastModifiedBy": {"user": {"displayName": "System Administrator"}},
+                "size": 4400000,
+            }]})
         if url.endswith("/sites/site-id/lists/list-id/columns"):
             return FakeResponse({"value": [
                 {"displayName": "Business Area", "name": "BusinessArea", "text": {}, "readOnly": False},
@@ -101,7 +108,14 @@ class FakeSession:
                 "webUrl": "https://example.sharepoint.com/Staging/incoming-guide.docx",
             }]})
         if "/items/Reviewed-id/children" in url:
-            return FakeResponse({"value": []})
+            return FakeResponse({"value": [{
+                "id": "reviewed-pdf-id",
+                "name": "guide.pdf",
+                "file": {},
+                "webUrl": "https://example.sharepoint.com/Reviewed/guide.pdf",
+                "eTag": '"reviewed-etag"',
+                "lastModifiedDateTime": "2026-09-22T05:55:00Z",
+            }]})
         if "/items/incoming-id?$expand=" in url:
             return FakeResponse({
                 "id": "incoming-id",
@@ -131,6 +145,16 @@ class FakeSession:
                 "listItem": {"fields": {"@odata.etag": '"list-etag-updated"', "Business area": "Claims"}},
                 "parentReference": {"id": "root"},
             })
+        if "/items/reviewed-pdf-id?$expand=" in url:
+            return FakeResponse({
+                "id": "reviewed-pdf-id",
+                "name": "guide.pdf",
+                "webUrl": "https://example.sharepoint.com/Reviewed/guide.pdf",
+                "eTag": '"reviewed-etag"',
+                "lastModifiedDateTime": "2026-09-22T05:55:00Z",
+                "listItem": {"fields": {"@odata.etag": '"reviewed-list-etag"', "BusinessArea": "Claims"}},
+                "parentReference": {"id": "Reviewed-id"},
+            })
         if url.endswith("/drives/drive-id/items/pdf-id/content"):
             return FakeResponse(content=b"pdf")
         if url.endswith("/drives/drive-id/items/docx-id/content"):
@@ -159,7 +183,7 @@ class FakeSession:
         return FakeResponse({"id": f"{json['name']}-id", "name": json["name"], "folder": {}})
 
     def put(self, url: str, data: bytes, headers: dict[str, str], timeout: int) -> FakeResponse:
-        self.put_calls.append((url, data))
+        self.put_calls.append((url, data, headers))
         return FakeResponse({"id": "staged-id", "name": "new-guide.pdf"})
 
     def delete(self, url: str, headers: dict[str, str], timeout: int) -> FakeResponse:
@@ -266,6 +290,55 @@ class SharePointClientTests(unittest.TestCase):
         self.assertEqual(headers["If-Match"], '"list-etag-1"')
         self.assertEqual(result["etag"], '"etag-current"')
         self.assertEqual(result["listItemEtag"], '"etag-updated"')
+
+    def test_get_version_history_reads_sharepoint_version_details(self) -> None:
+        client = SharePointClient(
+            hostname="example.sharepoint.com",
+            site_path="/sites/Knowledge",
+            credential=FakeCredential(),
+            session=FakeSession(),
+        )
+
+        versions = client.get_version_history("drive-id", "pdf-id")
+
+        self.assertEqual(versions, [{
+            "id": "1.0",
+            "lastModifiedDateTime": "2026-09-22T05:55:00Z",
+            "modifiedBy": "System Administrator",
+            "size": 4400000,
+        }])
+
+    def test_find_version_candidate_returns_history_without_assuming_revision(self) -> None:
+        client = SharePointClient(
+            hostname="example.sharepoint.com",
+            site_path="/sites/Knowledge",
+            credential=FakeCredential(),
+            session=FakeSession(include_reviewed=True),
+        )
+
+        candidate = client.find_version_candidate("Reviewed", "guide.pdf")
+
+        self.assertEqual(candidate["driveItemId"], "reviewed-pdf-id")
+        self.assertEqual(candidate["currentVersion"], "1.0")
+        self.assertEqual(candidate["versions"][0]["modifiedBy"], "System Administrator")
+        self.assertEqual(candidate["etag"], '"reviewed-etag"')
+
+    def test_replace_content_uses_if_match_and_returns_refreshed_item(self) -> None:
+        session = FakeSession()
+        client = SharePointClient(
+            hostname="example.sharepoint.com",
+            site_path="/sites/Knowledge",
+            credential=FakeCredential(),
+            session=session,
+        )
+
+        result = client.replace_content("drive-id", "pdf-id", b"revised", '"etag-before"')
+
+        url, content, headers = session.put_calls[0]
+        self.assertTrue(url.endswith("/drives/drive-id/items/pdf-id/content"))
+        self.assertEqual(content, b"revised")
+        self.assertEqual(headers["If-Match"], '"etag-before"')
+        self.assertEqual(result["etag"], '"etag-current"')
 
     def test_list_columns_returns_only_writable_names_and_types(self) -> None:
         client = SharePointClient(

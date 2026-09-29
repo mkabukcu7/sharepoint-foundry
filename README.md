@@ -120,6 +120,231 @@ FOUNDRY_TAXONOMY_PATH=taxonomy/controlled-terms.json
 FOUNDRY_EXTRACTION_MODEL=gpt-5-mini
 ```
 
+The Knowledge Librarian is a separate prompt agent. It does not replace the
+metadata or WTW classifier agents. It can retrieve a candidate Reviewed-file
+version history when invoked with a document name; matching filenames are
+presented as candidates and are not treated as proof of document identity:
+
+```dotenv
+FOUNDRY_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
+FOUNDRY_LIBRARIAN_AGENT_NAME=knowledge-librarian-agent
+FOUNDRY_LIBRARIAN_AGENT_VERSION=2
+FOUNDRY_LIBRARIAN_MODEL=gpt-5-mini
+FOUNDRY_LIBRARIAN_PROMPT_PATH=prompts/knowledge-librarian-agent.md
+```
+
+The librarian can only perform actions exposed by configured tools and should
+abstain when an authorized, approved source or required configuration is not
+available.
+
+### Local librarian chat
+
+Run the standalone local chat service on port `8010`, separately from the
+metadata app:
+
+```powershell
+.venv\Scripts\python.exe -m uvicorn backend.app.librarian_chat:app --host 127.0.0.1 --port 8010
+```
+
+Open `http://127.0.0.1:8010`. The service uses the librarian agent configured
+above and keeps conversation turns in process memory for up to 30 minutes.
+
+#### The chat has no caller authentication
+
+The service reads the approved library with the application identity and trusts
+the reviewer name a caller supplies. Anyone who can reach it can therefore read
+every approved document regardless of their own SharePoint rights, and can record
+an approval under another person's name. Delegated on-behalf-of authentication
+with permission trimming is the fix; it is not implemented yet.
+
+Until it is, the service refuses any request that does not come from loopback and
+reports `"callerAuthentication": "none"` on `/api/health`. Do not remove that
+guard to make a demo reachable. If you genuinely need a remote caller in an
+isolated environment, accept the risk explicitly:
+
+```powershell
+$env:LIBRARIAN_CHAT_ALLOW_REMOTE_UNAUTHENTICATED = "true"
+```
+
+#### Read capabilities
+
+Every turn is grounded with live SharePoint data read through Microsoft Graph:
+
+- The contents of the configured `Staging` and `Reviewed` folders.
+- For any document named in the message: its approved metadata columns, web URL,
+  last-modified timestamp, and SharePoint version history.
+
+Retrieved data is wrapped in `trust="untrusted-data"` delimiters so document text
+is treated as information, never as instructions. When `SHAREPOINT_HOSTNAME` is
+not configured the chat reports the limitation instead of guessing.
+
+#### Answering from approved content only
+
+When a turn looks like a knowledge question rather than a maintenance
+instruction, the chat queries the Azure AI Search index of approved documents and
+grounds the answer in the retrieved excerpts. The index filter is
+`approved eq true and reviewStatus eq 'approved'`, so unreviewed or rejected
+material can never be cited.
+
+Answers carry citations (document name, section, SharePoint version) which are
+rendered beneath the reply and returned in the `citations` field of the API
+response.
+
+The librarian abstains rather than guessing. Weak hits are discarded using the
+semantic reranker score, and when nothing clears `SEARCH_MIN_RERANKER_SCORE`
+(default `1.9`) the librarian is instructed to say it found no approved evidence
+and is forbidden from answering from file names, folder listings, or its own
+knowledge.
+
+This requires semantic ranking. Hybrid search scores barely move between a
+relevant and an irrelevant chunk, so they cannot drive abstention; the reranker's
+0-4 score can. `SEARCH_USE_SEMANTIC_RANKER` is therefore on by default, and the
+Bicep template provisions the service with semantic search enabled. For an
+existing service:
+
+```powershell
+az search service update --name <search-service> --resource-group <rg> --semantic-search free
+```
+
+If a hit arrives without a reranker score, relevance is unknown rather than
+acceptable, so the librarian treats it as no evidence instead of answering from
+something nobody has judged. A score of `0.0` is a real score, not a missing one,
+and is treated as weak evidence -- the librarian abstains quietly rather than
+reporting a search outage. If search is not configured or fails, the chat still
+responds, reports that approved-content search is unavailable, and declines to
+answer the question from other sources.
+
+Triage requests and metadata change requests skip retrieval, so the maintenance
+conversation is unaffected.
+
+#### Write capability (approval gated)
+
+The model never executes a change. When a message clearly requests a metadata
+change to a known document, the app builds a change plan from the live SharePoint
+state and returns it to the UI:
+
+1. The plan lists each editable field with its current and proposed value and
+   captures the item ETag.
+2. A reviewer types their name and clicks **Approve**.
+3. The app re-reads the item, refuses with HTTP 409 if the ETag changed, applies
+   the update with `If-Match`, verifies the written values, and reports the
+   version SharePoint assigned.
+
+Editable fields in the chat are limited to business area, audience, language,
+author and country of origin, mapped through `SHAREPOINT_COLUMN_MAP`. Taxonomy
+fields are deliberately excluded from the chat write path; they are edited in
+the reviewer panel, where selections are constrained to the controlled
+vocabulary. Writes require
+`SHAREPOINT_WRITEBACK_ENABLED=true`. Permissions, sharing links, sensitivity
+labels, retention and records settings are never changed, and documents are
+never deleted or overwritten by this chat.
+
+#### Guardrails
+
+Question side (applied before the agent is called):
+
+- Message length cap and a per-session rate limit (20 messages per 5 minutes).
+- Refusal of prompt-injection attempts, requests for credentials, keys or
+  tokens, and requests to change permissions/labels/retention or delete content.
+
+Content side (applied before the reply is shown):
+
+- Secret-shaped values are redacted from both retrieved data and replies.
+- Replies that would disclose the agent's internal instructions are replaced.
+- Claims that a change was made are annotated when nothing was executed.
+
+Permissions are not yet trimmed to the signed-in user, so run this against a
+library whose audience matches everyone who can reach the local port.
+
+#### Intake triage (the librarian's standing job)
+
+`GET /api/librarian/triage`, or the **Run intake triage** button in the chat,
+runs a read-only pass over Staging. It reconciles the live Staging folder with
+the stored classification records and, for each item, checks:
+
+- **Summary** — present, and between 80 and 1200 characters.
+- **Tags** — every proposed value exists in the controlled taxonomy, and the
+  required fields (`materialType`, `topics`) are populated. Invented terms are
+  reported rather than accepted.
+- **Confidence** — every scored tag is compared against
+  `LIBRARIAN_CONFIDENCE_THRESHOLD` (default `0.7`).
+- **Review state** — unresolved review fields, plus how long the item has been
+  waiting against `LIBRARIAN_REVIEW_SLA_DAYS` (default `5`).
+- **Risk** — classifier `riskFlags` and `reviewRequired`.
+
+Each item is returned with `disposition` (`ready-for-approval` or
+`needs-attention`), an explicit `blockers` list, and a `priority` used to rank
+the worklist so overdue and risky items surface first. Files sitting in Staging
+that have never been classified appear with the blocker "This file is in Staging
+but has not been classified yet"; records whose file has left Staging are
+flagged as drift.
+
+The job never writes. `ready-for-approval` only means the item is safe to put in
+front of a reviewer — publishing, archiving and staged-source removal still run
+through the existing approval gate.
+
+#### Publish, archive and remove
+
+On approval, `writeback.apply()` performs the lifecycle:
+
+1. Apply approved metadata columns with `If-Match`.
+2. For a new document, move it Staging → `Reviewed`. For an approved revision,
+   replace the existing file's content in place.
+3. Read version history and verify SharePoint recorded a new version.
+4. For a revision, move the staged original into
+   `SHAREPOINT_ARCHIVE_FOLDER_NAME` (default `Archive`), renamed to
+   `<name> (superseded <timestamp>)<ext>`, which removes it from Staging while
+   keeping it recoverable.
+
+If archiving conflicts, the staged original is retained in place and reported
+via `stageSourceRetained` rather than being lost.
+
+## Approval, attribution and the search index
+
+Approval requires a named reviewer. `POST /api/documents/{name}/review/approve`
+takes `{"reviewer": "<name>"}` and rejects a missing or blank name, so an
+approval can never be recorded anonymously. The name is stored as `reviewedBy`
+alongside `reviewedAt`. A writeback retry reuses the recorded approver rather
+than attributing the change to whoever triggered the retry.
+
+Approving a document also indexes it immediately, so it becomes answerable in the
+librarian chat without a separate reindex. The approval response carries a
+`searchIndex` field reporting the outcome; if search is unconfigured or indexing
+fails, the approval still stands and the reason is reported.
+
+Index membership is maintained in both directions:
+
+- Losing approval **removes** the document's chunks, at the moment approval is
+  revoked rather than at the next reindex. Editing a reviewed field or resolving
+  a classification flag both return a document to `needs-review`, and each
+  withdraws it from the answer index straight away.
+- Re-indexing a new version **replaces** the previous one. Chunk ids are keyed on
+  document and position rather than version, so versions overwrite in place
+  instead of accumulating.
+- Revoking approval **while indexing is in flight** wins. Indexing embeds before
+  it uploads, so a revocation can complete in between; the upload would otherwise
+  restore citable chunks afterwards. Indexing captures an approval token first
+  and discards its own write if approval changed meanwhile.
+- Index writes and withdrawals for **the same document are serialized**. Chunk
+  ids are shared across approvals, so overlapping operations act on the same
+  keys and a withdrawal could delete chunks a concurrent re-approval had just
+  uploaded. Each document has its own lifecycle lock, held across the Search
+  calls, so unrelated reviews still run in parallel.
+- A **partially failed batch** is never reported as success. Azure AI Search
+  returns per-key failures in its results rather than raising, so a revocation
+  could otherwise be recorded as complete while chunks remained citable. A
+  partial upload is rolled back, because position-keyed ids mean it has already
+  overwritten part of the previous version.
+
+Deletions are computed from known chunk counts rather than discovered by
+querying, because Azure AI Search indexes asynchronously and a just-written
+document is not immediately searchable. Those known ids are deleted first, and a
+query sweep runs afterwards only to reconcile leftovers, so a failing sweep can
+never leave revoked content in the index.
+
+If you change the chunk-id scheme, purge the index and rebuild — chunks written
+under the old scheme can no longer be addressed and would linger as orphans.
+
 ## SharePoint ingestion
 
 Configure the SharePoint source with non-secret settings:
@@ -149,13 +374,53 @@ The generated `data\extracted-metadata.json` contains live SharePoint identities
 
 Create text columns in the document library for the metadata you want to write. `SHAREPOINT_COLUMN_MAP` maps application field names to the columns' **internal SharePoint names**, which can differ from their display names. Avoid mapping `author` to SharePoint's built-in Author lookup column; use a dedicated text column such as `MetadataAuthor`.
 
+Alongside the five free-text fields, the seven controlled-taxonomy fields can be
+mapped and written: `materialType`, `topics`, `businesses`, `industries`,
+`geographies`, `collections` and `languages`. Multi-value selections are written
+to plain text columns as a semicolon-separated list, for example
+`Automotive; Charities and Nonprofits`, so no multi-choice column type is
+required.
+
+#### Taxonomy review and approval
+
+Classification and publication cover the same fields. The reviewer panel shows
+every taxonomy field as an editable selection restricted to the active
+controlled vocabulary, so a reviewer can correct the classifier but cannot
+invent a term — an unknown value is rejected with `Unknown <category> term`.
+
+Approval is blocked until both of the following are true:
+
+1. Every field, free-text and taxonomy, has been accepted or edited.
+2. Every classification flag is resolved.
+
+Flags come in two kinds. Acknowledgement flags — `reviewRequired` and each
+classifier `riskFlag` — must be explicitly resolved by a named reviewer through
+`POST /api/documents/{name}/review/flags/resolve`, optionally with a note.
+Derived flags — a term outside the taxonomy, or an empty required field
+(`materialType`, `topics`) — cannot be acknowledged away and clear themselves
+once the underlying field is corrected.
+
+On approval the accepted taxonomy is written to the mapped SharePoint columns
+and also recorded on the document as `approvedTaxonomy`, leaving the original
+classifier output in `wtwClassification` intact for accuracy measurement.
+
 Write-back is disabled unless `SHAREPOINT_WRITEBACK_ENABLED=true`. When enabled:
 
 1. The presenter must explicitly select `Stage this upload in SharePoint`; the checkbox is off by default.
 2. Only selected uploads are processed locally and uploaded to the configured `Staging` folder.
 3. Approval writes accepted or edited values to the mapped SharePoint columns.
+   Multi-value taxonomy selections are joined with `; `.
 4. The same drive item is moved into `Reviewed`; the app does not create a duplicate.
-5. The UI records the destination and SharePoint URL. Metadata or move failures remain visible and retryable.
+5. The UI records the destination, SharePoint URL, and actual version returned by SharePoint.
+
+When a staged upload may revise an existing Reviewed file, the UI fetches that
+file's SharePoint version history. A reviewer must explicitly confirm the
+revision action; a filename match alone is never sufficient. After approval,
+the app rechecks both items' ETags, replaces the existing file's content in
+place, writes approved metadata, and verifies that SharePoint reported a new
+version. The staging source is deleted only after version verification. A
+stale target stops for refreshed review; a staging cleanup conflict is
+reported and leaves the source in place.
 
 Existing catalog records and uploads made without the checkbox can never enter the write-back path, even when the global capability is enabled.
 

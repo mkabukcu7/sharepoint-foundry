@@ -17,6 +17,9 @@ data/extracted-metadata.json
 # Customer taxonomy source and generated controlled terms
 taxonomy/
 
+# Customer-derived reference material stays in a private environment
+sample-documents/WTW_Intranet_Taxonomy_Reference.docx
+
 # azd
 .azure/
 

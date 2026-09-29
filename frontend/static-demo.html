@@ -138,9 +138,16 @@
     .evidence { margin: 0 0 9px; color: var(--cp-text-muted); font-size: 12px; line-height: 1.4; }
     .review-actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .review-actions button { padding: 6px 9px; font-size: 12px; }
+    .taxonomy-select { width: 100%; margin-bottom: 7px; padding: 6px; border: 1px solid var(--cp-border); border-radius: 6px; background: var(--cp-surface); color: inherit; font: inherit; }
+    .evidence.unknown-term { color: var(--cp-danger); }
+    .flag-heading { margin: 4px 0 0; font-size: 14px; }
+    .review-field.flag.pending { border-color: var(--cp-warning); }
+    .review-field.flag input { width: 100%; margin-bottom: 7px; }
     button.danger { border: 1px solid var(--cp-danger); background: transparent; color: var(--cp-danger); }
     button.danger:hover { background: rgba(255, 133, 133, 0.1); }
     .approve-review { width: 100%; margin-top: 12px; }
+    .approver-label { display: block; margin-top: 14px; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #4a5568; }
+    .approver-name { width: 100%; margin-top: 5px; padding: 7px 9px; border: 1px solid #c2ccd6; border-radius: 6px; font: inherit; }
     .review-message { min-height: 18px; margin: 7px 0 0; color: var(--cp-text-muted); font-size: 12px; }
     .review-message.error { color: var(--cp-danger); }
     .review-marker { margin-top: 4px; color: var(--cp-warning); font-size: 11px; }
@@ -252,7 +259,7 @@
     </section>
   </main>
   <script>
-    const state = { documents: [], selected: null, stagingDocuments: [] };
+    const state = { documents: [], selected: null, stagingDocuments: [], versionCandidates: {}, approverName: "" };
     const filters = ["themeFilter", "tagFilter", "languageFilter", "authorFilter", "sentimentFilter", "countryFilter"];
 
     loadDocuments();
@@ -680,35 +687,77 @@
         element("h3", {}, "Metadata review"),
         element("span", { className: `review-status ${approved ? "approved" : ""}` }, approved ? "Approved" : "Needs review")));
       if (details.sharePointStage?.status === "staged") {
+        const revisionSelected = details.sharePointRevision?.action === "replace-existing";
         panel.append(element("p", { className: "review-message" },
-          `SharePoint staging: ${details.sharePointStage.folder}. Approval will write metadata and move this file to Reviewed.`));
+          revisionSelected
+            ? `SharePoint staging: ${details.sharePointStage.folder}. Approval will replace the matching Reviewed item in place, then remove this staged source after version verification.`
+            : `SharePoint staging: ${details.sharePointStage.folder}. Approval will write metadata and move this file to Reviewed.`));
+      }
+      if (!approved && details.sharePointStage?.status === "staged") {
+        renderVersionAction(panel, details);
       }
       const fields = element("div", { className: "review-fields" });
       Object.entries(review.fields).forEach(([key, field]) => {
-        const input = element("input", { value: field.value, "aria-label": `${field.label} review value`, disabled: approved });
+        const isTaxonomy = field.kind === "taxonomy-multi" || field.kind === "taxonomy-single";
+        const control = isTaxonomy
+          ? taxonomyControl(field, approved)
+          : element("input", { value: field.value, "aria-label": `${field.label} review value`, disabled: approved });
         const actions = element("div", { className: "review-actions" });
         if (!approved) {
           const accept = element("button", { type: "button" }, field.reviewDecision === "accepted" ? "Accepted" : "Accept");
           const edit = element("button", { type: "button", className: "secondary" }, "Save edit");
           const reject = element("button", { type: "button", className: "danger" }, "Reject");
-          accept.onclick = () => submitReview(details, key, "accepted", input.value, accept);
-          edit.onclick = () => submitReview(details, key, "edited", input.value, edit);
+          const readValue = () => isTaxonomy ? selectedTaxonomyValue(control, field) : control.value;
+          accept.onclick = () => submitReview(details, key, "accepted", readValue(), accept);
+          edit.onclick = () => submitReview(details, key, "edited", readValue(), edit);
           reject.onclick = () => submitReview(details, key, "rejected", null, reject);
           actions.append(accept, edit, reject);
         }
         const support = field.reviewDecision === "rejected" ? "rejected" : field.support;
-        fields.append(element("article", { className: "review-field" },
-          element("header", {}, element("strong", {}, field.label), element("span", { className: `support ${support}` }, support)),
-          input,
-          element("p", { className: "evidence" }, field.evidence),
-          actions));
+        const header = element("header", {},
+          element("strong", {}, field.label + (field.required ? " *" : "")),
+          element("span", { className: `support ${support}` }, support));
+        if (typeof field.confidence === "number") {
+          header.insertBefore(
+            element("span", { className: `support ${field.confidence < 0.7 ? "inferred" : "grounded"}` }, `confidence ${field.confidence.toFixed(2)}`),
+            header.lastChild);
+        }
+        const article = element("article", { className: "review-field" }, header, control);
+        if (field.unknownValues?.length) {
+          article.append(element("p", { className: "evidence unknown-term" },
+            `Outside the taxonomy: ${field.unknownValues.join(", ")}. Edit this field to a valid term.`));
+        }
+        article.append(element("p", { className: "evidence" }, field.evidence), actions);
+        fields.append(article);
       });
       panel.append(fields);
+      renderClassificationFlags(panel, details, review, approved);
       if (!approved) {
-        const resolved = Object.values(review.fields).every(field => ["accepted", "edited"].includes(field.reviewDecision));
-        const approve = element("button", { type: "button", className: "approve-review", disabled: !resolved }, "Approve metadata");
-        approve.onclick = () => approveReview(details, approve);
-        panel.append(approve, element("p", { className: "review-message", id: "reviewMessage", role: "status", "aria-live": "polite" }, resolved ? "All fields resolved. Ready for approval." : "Accept or edit all five fields to approve."));
+        const unresolvedFields = Object.values(review.fields).filter(field => !["accepted", "edited"].includes(field.reviewDecision)).length;
+        const pendingFlags = (review.classificationFlags || []).filter(flag => flag.status !== "resolved").length;
+        const resolved = unresolvedFields === 0 && pendingFlags === 0;
+        const approvalLabel = details.sharePointRevision?.action === "replace-existing"
+          ? "Approve metadata and replace existing version"
+          : "Approve metadata";
+        const approve = element("button", { type: "button", className: "approve-review", disabled: !resolved }, approvalLabel);
+        const approver = element("input", {
+          className: "approver-name",
+          id: "approverName",
+          placeholder: "Your name",
+          "aria-label": "Approving reviewer name",
+          value: state.approverName || ""
+        });
+        approver.oninput = () => { state.approverName = approver.value; };
+        approve.onclick = () => approveReview(details, approver.value, approve);
+        const blockers = [];
+        if (unresolvedFields) blockers.push(`${unresolvedFields} field${unresolvedFields === 1 ? "" : "s"} still need a decision`);
+        if (pendingFlags) blockers.push(`${pendingFlags} classification flag${pendingFlags === 1 ? "" : "s"} still need resolving`);
+        panel.append(
+          element("label", { className: "approver-label", htmlFor: "approverName" }, "Approving reviewer"),
+          approver,
+          approve,
+          element("p", { className: "review-message", id: "reviewMessage", role: "status", "aria-live": "polite" },
+            resolved ? "All fields and classification flags resolved. Enter your name to approve." : blockers.join(" and ") + "."));
       } else {
         const writeback = details.sharePointWriteback;
         panel.append(
@@ -717,14 +766,28 @@
         );
         if (writeback?.status === "applied") {
           const destination = writeback.destinationFolder || details.sharePoint?.folderPath || "Reviewed";
-          const message = element("p", { className: "review-message" }, `SharePoint metadata applied and file moved to ${destination}.`);
+          const result = details.sharePointRevision?.action === "replace-existing"
+            ? `SharePoint content and metadata updated in place. SharePoint version ${writeback.sharePointVersion?.id || "recorded"} was verified.`
+            : `SharePoint metadata applied and file moved to ${destination}. SharePoint version ${writeback.sharePointVersion?.id || "recorded"} was verified.`;
+          const message = element("p", { className: "review-message" }, result);
+          if (writeback.stageSourceArchived) {
+            message.append(` The staged source was archived to ${writeback.archiveFolder || "Archive"} as "${writeback.archivedAs}" and removed from Staging.`);
+          }
+          if (writeback.stageSourceRetained) {
+            message.append(` The staged source remains in Staging because archiving was not safe: ${writeback.stageSourceCleanupError || "SharePoint changed it after approval."}`);
+          }
           if (details.sharePoint?.webUrl) {
             message.append(" ", element("a", { className: "document-link", href: details.sharePoint.webUrl, target: "_blank", rel: "noreferrer" }, "Open in SharePoint"));
           }
           panel.append(message);
         } else if (["failed", "conflict"].includes(writeback?.status)) {
           const retry = element("button", { type: "button", className: "approve-review" }, "Retry SharePoint write-back");
-          retry.onclick = () => retryWriteback(details, retry);
+          if (writeback.status === "conflict" && details.sharePointRevision?.action === "replace-existing") {
+            retry.textContent = "Refresh revision plan and review again";
+            retry.onclick = () => updateVersionAction(details, "replace-existing", retry);
+          } else {
+            retry.onclick = () => retryWriteback(details, retry);
+          }
           panel.append(
             element("p", { className: "review-message error", id: "reviewMessage", role: "status", "aria-live": "polite" }, writeback.error || "SharePoint write-back failed."),
             retry
@@ -732,6 +795,93 @@
         } else if (details.sharePoint) {
           panel.append(element("p", { className: "review-message" }, "Approved locally. SharePoint write-back was not enabled."));
         }
+      }
+    }
+
+    function renderVersionAction(panel, details) {
+      const name = details.documentName;
+      const current = state.versionCandidates[name];
+      const section = element("section", { className: "review-message" },
+        element("strong", {}, "SharePoint version review"));
+      if (!current) {
+        section.append(element("p", {}, "Checking the Reviewed library for version history…"));
+        panel.append(section);
+        state.versionCandidates[name] = { loading: true };
+        loadVersionCandidate(details);
+        return;
+      }
+      if (current.error) {
+        section.append(element("p", { className: "error" }, current.error));
+      } else if (!current.candidate) {
+        section.append(element("p", {}, "No same-name document was found in Reviewed. Approval will publish this as a new document."));
+      } else {
+        const candidate = current.candidate;
+        const version = candidate.currentVersion || "Unavailable";
+        section.append(
+          element("p", {}, `Possible existing file: ${candidate.fileName}; current SharePoint version: ${version}.`),
+          element("p", {}, "A matching filename is only a candidate, not proof it is the same document. Confirm its identity and history before marking this as a revision."),
+          element("ul", {}, ...(candidate.versions || []).map(item =>
+            element("li", {}, `Version ${item.id || "unknown"} — ${item.lastModifiedDateTime || "date unavailable"} — ${item.modifiedBy || "editor unavailable"}`)
+          ))
+        );
+      }
+
+      const selectedAction = details.sharePointRevision?.action || "new-document";
+      const actions = element("div", { className: "review-actions" });
+      if (current.candidate) {
+        const replace = element("button", {
+          type: "button",
+          className: selectedAction === "replace-existing" ? "selected" : "secondary"
+        }, selectedAction === "replace-existing" ? "Revision selected" : "Treat as revision");
+        replace.disabled = selectedAction === "replace-existing" || Boolean(current.error);
+        replace.onclick = () => updateVersionAction(details, "replace-existing", replace);
+        actions.append(replace);
+      }
+      if (selectedAction === "replace-existing") {
+        const reset = element("button", { type: "button", className: "secondary" }, "Publish as new document instead");
+        reset.onclick = () => updateVersionAction(details, "new-document", reset);
+        actions.append(reset);
+        section.append(element("p", {}, "Approval will replace the existing file’s content in place. SharePoint assigns the version, and the staged source copy is moved to the Archive folder once the new version is confirmed. It stays in Staging only if archiving fails."));
+      }
+      section.append(actions);
+      panel.append(section);
+    }
+
+    async function loadVersionCandidate(details) {
+      const name = details.documentName;
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(name)}/sharepoint/version-candidate`);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Unable to read SharePoint version history");
+        state.versionCandidates[name] = { candidate: result.candidate };
+      } catch (error) {
+        state.versionCandidates[name] = { error: error.message };
+      }
+      if (state.selected?.documentName === name) render();
+    }
+
+    async function updateVersionAction(details, action, button) {
+      button.disabled = true;
+      setReviewMessage(action === "replace-existing" ? "Refreshing version history and preparing revision approval…" : "Updating version action…");
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(details.documentName)}/review/version-action`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action })
+        });
+        const updated = await response.json();
+        if (!response.ok) throw new Error(updated.detail || "Unable to update version action");
+        const previousCandidate = state.versionCandidates[details.documentName]?.candidate;
+        state.versionCandidates[details.documentName] = {
+          candidate: updated.sharePointRevision?.target || previousCandidate || null
+        };
+        const index = state.documents.findIndex(document => document.documentName === updated.documentName);
+        state.documents[index] = updated;
+        state.selected = updated;
+        render();
+      } catch (error) {
+        button.disabled = false;
+        setReviewMessage(error.message, true);
       }
     }
 
@@ -765,11 +915,97 @@
       }
     }
 
-    async function approveReview(details, button) {
+    function taxonomyControl(field, approved) {
+      const multi = field.kind === "taxonomy-multi";
+      const selected = new Set(multi ? field.value || [] : [field.value].filter(Boolean));
+      const options = [...new Set([...(field.choices || []), ...selected])].sort((left, right) => left.localeCompare(right));
+      const select = element("select", {
+        className: "taxonomy-select",
+        multiple: multi,
+        size: multi ? Math.min(Math.max(options.length, 2), 8) : 1,
+        disabled: approved,
+        "aria-label": `${field.label} taxonomy selection`
+      });
+      if (!multi) select.append(element("option", { value: "" }, "— none —"));
+      options.forEach(value => {
+        const option = element("option", { value }, value);
+        option.selected = selected.has(value);
+        select.append(option);
+      });
+      if (!options.length) {
+        select.append(element("option", { value: "", disabled: true }, "No taxonomy terms are available"));
+      }
+      return select;
+    }
+
+    function selectedTaxonomyValue(select, field) {
+      const values = [...select.selectedOptions].map(option => option.value).filter(Boolean);
+      return field.kind === "taxonomy-multi" ? values : (values[0] || "");
+    }
+
+    function renderClassificationFlags(panel, details, review, approved) {
+      const flags = review.classificationFlags || [];
+      if (!flags.length) return;
+      const list = element("div", { className: "review-fields" });
+      list.append(element("h4", { className: "flag-heading" }, "Classification flags"));
+      flags.forEach(flag => {
+        const resolved = flag.status === "resolved";
+        const article = element("article", { className: `review-field flag ${resolved ? "resolved" : "pending"}` },
+          element("header", {},
+            element("strong", {}, flag.type.replace(/-/g, " ")),
+            element("span", { className: `support ${resolved ? "confirmed" : "missing"}` }, resolved ? "resolved" : "pending")),
+          element("p", { className: "evidence" }, flag.message));
+        if (resolved) {
+          article.append(element("p", { className: "evidence" },
+            `Resolved by ${flag.resolvedBy}${flag.note ? `: ${flag.note}` : "."}`));
+        } else if (!approved && flag.acknowledgeOnly) {
+          const reviewer = element("input", { placeholder: "Your name", "aria-label": "Reviewer name" });
+          const note = element("input", { placeholder: "Why this is acceptable (optional)", "aria-label": "Resolution note" });
+          const resolve = element("button", { type: "button" }, "Resolve flag");
+          resolve.onclick = () => resolveFlag(details, flag.id, reviewer.value, note.value, resolve);
+          article.append(reviewer, note, element("div", { className: "review-actions" }, resolve));
+        } else if (!approved) {
+          article.append(element("p", { className: "evidence" }, "Correct the field above to clear this flag."));
+        }
+        list.append(article);
+      });
+      panel.append(list);
+    }
+
+    async function resolveFlag(details, flagId, reviewer, note, button) {
+      if (!reviewer.trim()) {
+        setReviewMessage("Enter your name before resolving a classification flag.", true);
+        return;
+      }
+      button.disabled = true;
+      setReviewMessage("Resolving classification flag...");
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(details.documentName)}/review/flags/resolve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ flagId, reviewer, note: note || null })
+        });
+        await applyReviewResponse(response);
+      } catch (error) {
+        button.disabled = false;
+        await loadDocuments();
+        setReviewMessage(error.message, true);
+      }
+    }
+
+    async function approveReview(details, reviewer, button) {
+      if (!reviewer.trim()) {
+        setReviewMessage("Enter your name before approving. Approvals are recorded against a named reviewer.", true);
+        return;
+      }
       button.disabled = true;
       setReviewMessage("Approving metadata...");
       try {
-        const response = await fetch(`/api/documents/${encodeURIComponent(details.documentName)}/review/approve`, { method: "POST" });
+        const response = await fetch(`/api/documents/${encodeURIComponent(details.documentName)}/review/approve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reviewer })
+        });
         await applyReviewResponse(response);
       } catch (error) {
         button.disabled = false;

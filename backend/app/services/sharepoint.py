@@ -301,12 +301,83 @@ class SharePointClient:
         )
         fields = details.get("listItem", {}).get("fields", {})
         return {
+            "fileName": details.get("name"),
             "etag": details.get("eTag"),
             "listItemEtag": fields.get("@odata.etag"),
             "existingColumns": fields,
             "parentReference": details.get("parentReference"),
             "webUrl": details.get("webUrl", ""),
+            "lastModifiedDateTime": details.get("lastModifiedDateTime"),
         }
+
+    def find_version_candidate(self, folder_name: str, file_name: str) -> dict | None:
+        if Path(file_name).name != file_name:
+            raise ValueError("Invalid SharePoint file name")
+        self._authorize()
+        _, drive_id = self._site_and_drive()
+        folder = self._workflow_folder(drive_id, folder_name)
+        candidates = [
+            item
+            for item in self._child_items(drive_id, folder["id"])
+            if "file" in item and item.get("name", "").casefold() == file_name.casefold()
+        ]
+        if len(candidates) > 1:
+            raise ValueError(f"Multiple SharePoint files match '{file_name}' in {folder_name}")
+        if not candidates:
+            return None
+
+        item = candidates[0]
+        current = self.refresh_item(drive_id, item["id"])
+        versions = self.get_version_history(drive_id, item["id"])
+        current_version = max(
+            versions,
+            key=lambda version: str(version.get("lastModifiedDateTime") or ""),
+            default=None,
+        )
+        return {
+            **current,
+            "driveId": drive_id,
+            "driveItemId": item["id"],
+            "fileName": item.get("name", file_name),
+            "webUrl": current.get("webUrl") or item.get("webUrl", ""),
+            "folderPath": folder_name,
+            "versions": versions,
+            "currentVersion": current_version.get("id") if current_version else None,
+        }
+
+    def get_version_history(self, drive_id: str, item_id: str) -> list[dict]:
+        self._authorize()
+        values = self._paged_values(
+            f"{GRAPH_ROOT}/drives/{drive_id}/items/{item_id}/versions"
+            "?$select=id,lastModifiedDateTime,lastModifiedBy,size"
+        )
+        return [
+            {
+                "id": str(version.get("id", "")),
+                "lastModifiedDateTime": version.get("lastModifiedDateTime"),
+                "modifiedBy": (
+                    version.get("lastModifiedBy", {}).get("user", {}).get("displayName")
+                    or version.get("lastModifiedBy", {}).get("application", {}).get("displayName")
+                ),
+                "size": version.get("size"),
+            }
+            for version in values
+        ]
+
+    def replace_content(self, drive_id: str, item_id: str, content: bytes, etag: str) -> dict:
+        if not content:
+            raise ValueError("Replacement document content cannot be empty")
+        response = self.session.put(
+            f"{GRAPH_ROOT}/drives/{drive_id}/items/{item_id}/content",
+            data=content,
+            headers={**self._headers("application/octet-stream"), "If-Match": etag},
+            timeout=120,
+        )
+        if getattr(response, "status_code", 200) == 412:
+            from backend.app.services.writeback import WritebackConflict
+            raise WritebackConflict("SharePoint item changed since version review; refresh and approve a new plan")
+        response.raise_for_status()
+        return self.refresh_item(drive_id, item_id)
 
     def ensure_folder(self, drive_id: str, folder_name: str) -> dict:
         self._authorize()
@@ -407,12 +478,44 @@ class SharePointClient:
         result["destinationFolder"] = folder_name
         return result
 
+    def archive_item(
+        self,
+        drive_id: str,
+        item_id: str,
+        folder_name: str,
+        etag: str,
+        new_name: str | None = None,
+    ) -> dict:
+        """Move an item into the archive folder, renaming it to avoid collisions."""
+        folder = self.ensure_folder(drive_id, folder_name)
+        payload: dict = {"parentReference": {"id": folder["id"]}}
+        if new_name:
+            if Path(new_name).name != new_name:
+                raise ValueError("Invalid archive file name")
+            payload["name"] = new_name
+        response = self.session.patch(
+            f"{GRAPH_ROOT}/drives/{drive_id}/items/{item_id}",
+            json=payload,
+            headers={**self._headers(), "If-Match": etag},
+            timeout=30,
+        )
+        if getattr(response, "status_code", 200) == 412:
+            from backend.app.services.writeback import WritebackConflict
+            raise WritebackConflict("SharePoint staging item changed before archiving; it was left in place")
+        response.raise_for_status()
+        result = response.json()
+        result["destinationFolder"] = folder_name
+        return result
+
     def delete_item(self, drive_id: str, item_id: str, etag: str) -> None:
         response = self.session.delete(
             f"{GRAPH_ROOT}/drives/{drive_id}/items/{item_id}",
             headers={**self._headers(), "If-Match": etag},
             timeout=30,
         )
+        if getattr(response, "status_code", 200) == 412:
+            from backend.app.services.writeback import WritebackConflict
+            raise WritebackConflict("SharePoint staging item changed before cleanup; it was left in place")
         response.raise_for_status()
 
     def list_columns(self) -> list[dict]:
