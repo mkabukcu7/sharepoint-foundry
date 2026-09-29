@@ -44,6 +44,11 @@ knowledge-agent-mvp/
 
 The bundled dashboard requires only Python 3.12 or later.
 
+> **Setting this up for the first time, or taking the project over?** Read
+> [docs/demo-setup.md](docs/demo-setup.md). It covers the Azure resources,
+> RBAC roles, Graph permissions, and the full demo run order. The quick start
+> below is the offline path and needs no Azure access.
+
 From the repository root:
 
 ```powershell
@@ -460,7 +465,8 @@ Use `SHAREPOINT_CREDENTIAL_MODE=default` for the connector's service principal o
 
 ## Demo rehearsal
 
-Run these commands before presenting:
+Run these commands before presenting. For first-time setup and the Azure
+prerequisites behind them, see [docs/demo-setup.md](docs/demo-setup.md).
 
 ```powershell
 python -m backend.scripts.reset_demo
