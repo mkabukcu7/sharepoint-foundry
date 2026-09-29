@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from zipfile import ZipFile, is_zipfile
 
 from backend.app.services.storage import load_documents, save_documents
 from backend.app.services import storage
@@ -10,6 +11,24 @@ from backend.scripts import reset_demo as reset_demo_module
 from backend.scripts.reset_demo import reset_demo
 from backend.scripts import sanitize_demo_metadata as sanitizer
 from backend.scripts.seed_sample_documents import seed_documents, write_pdf
+
+
+def _seed_fingerprint(path: Path) -> object:
+    """Identify a seeded document by its content rather than its raw bytes.
+
+    Raw bytes are not stable across environments, so comparing them would fail
+    on a correct checkout. OOXML files are DEFLATE-compressed zips, and the
+    compressed output differs between zlib builds even for identical input, so
+    the archive entries are compared after decompression. The PDF writer emits
+    ``os.linesep``, so its newlines are normalised.
+    """
+    if is_zipfile(path):
+        with ZipFile(path) as archive:
+            return [
+                (info.filename, info.date_time, archive.read(info.filename))
+                for info in sorted(archive.infolist(), key=lambda entry: entry.filename)
+            ]
+    return path.read_bytes().replace(b"\r\n", b"\n")
 
 
 class DemoReadinessTests(unittest.TestCase):
@@ -24,8 +43,8 @@ class DemoReadinessTests(unittest.TestCase):
             self.assertEqual(generated, expected)
             for name in expected:
                 self.assertEqual(
-                    (generated_dir / name).read_bytes(),
-                    (expected_dir / name).read_bytes(),
+                    _seed_fingerprint(generated_dir / name),
+                    _seed_fingerprint(expected_dir / name),
                     name,
                 )
 

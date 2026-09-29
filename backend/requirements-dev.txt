@@ -1,0 +1,6 @@
+-r requirements.txt
+
+# Test-only dependencies. The suite is written for pytest, and the FastAPI
+# TestClient used by the API tests requires httpx at import time.
+pytest==9.1.1
+httpx==0.28.1

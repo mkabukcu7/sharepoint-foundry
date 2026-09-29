@@ -18,7 +18,7 @@
 		{
 			"label": "Demo: Test",
 			"type": "shell",
-			"command": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest",
 			"problemMatcher": [],
 			"group": {
 				"kind": "test",

@@ -91,9 +91,28 @@ The repository also includes visible VS Code tasks:
 - `Demo: Check live Foundry` performs one controlled-taxonomy classification call.
 - `Demo: Run offline fallback` starts deterministic mock mode only when live Foundry is unavailable.
 
+## Running the tests
+
+The test suite needs two dependencies beyond the runtime requirements, so install
+the development set first:
+
+```powershell
+python -m pip install -r backend\requirements-dev.txt
+python -m pytest
+```
+
+A clean checkout on a supported Python should report every test passing, with no
+Azure access, no `.env` file, and no customer data required. Anything else is a
+real failure worth investigating.
+
+Use `pytest` rather than `unittest discover`. Several test modules are written in
+pytest style, and `unittest` silently collects only part of the suite.
+
 ## Customer taxonomy data
 
 Place the customer-provided taxonomy source at `taxonomy\WTW_Intranet_Taxonomy_Reference.docx` locally before running `python -m backend.scripts.build_taxonomy`. The entire `taxonomy\` directory is ignored by Git; neither the source document nor generated controlled terms should be committed or uploaded to the repository.
+
+The tests do not use that file. They pin `FOUNDRY_TAXONOMY_PATH` to the synthetic fixture `tests\fixtures\test-taxonomy.json` from `conftest.py`, so the suite runs identically with or without customer data present.
 
 ## Microsoft Foundry
 
@@ -446,7 +465,7 @@ Run these commands before presenting:
 ```powershell
 python -m backend.scripts.reset_demo
 python -m backend.scripts.demo_preflight
-python -m unittest discover -s tests -v
+python -m pytest
 python -m uvicorn backend.app.main:app --reload --port 8000
 ```
 

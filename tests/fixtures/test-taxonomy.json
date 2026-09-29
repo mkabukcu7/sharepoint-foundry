@@ -1,0 +1,28 @@
+{
+  "source": "Synthetic fixture for automated tests. Not customer data.",
+  "categories": {
+    "materialTypes": [
+      { "value": "Blog", "active": true },
+      { "value": "Report", "active": true }
+    ],
+    "topics": [
+      { "value": "2012 Pension Reform", "active": true },
+      { "value": "162(m) Deduction Limit", "active": true }
+    ],
+    "businesses": [
+      { "value": "Retirement", "active": true }
+    ],
+    "industries": [
+      { "value": "Financial Services", "active": true }
+    ],
+    "geographies": [
+      { "value": "United Kingdom", "active": true }
+    ],
+    "collections": [
+      { "value": "Regulatory Updates", "active": true }
+    ],
+    "languages": [
+      { "value": "English", "active": true }
+    ]
+  }
+}
