@@ -115,6 +115,7 @@ def _unclassified_item(entry: dict, settings: TriageSettings, moment: datetime) 
         "state": state,
         "status": "not-started",
         "unresolvedFields": sorted(ALL_REVIEW_FIELDS.values()),
+        "unresolvedFlags": [],
         "waitingDays": waiting_days,
         "slaDays": settings.review_sla_days,
         "reviewedBy": None,
@@ -135,7 +136,7 @@ def _unclassified_item(entry: dict, settings: TriageSettings, moment: datetime) 
             "belowThreshold": [],
         },
         "review": review,
-        "riskFlags": [],
+        "unresolvedFlags": [],
         "blockers": blockers,
         "webUrl": entry.get("webUrl", ""),
         "recommendedAction": (
@@ -162,13 +163,14 @@ def _assess_document(
     summary = _check_summary(document, classification, blockers)
     tags = _check_tags(classification, taxonomy, blockers)
     confidence = _check_confidence(classification, settings, blockers)
-    review = _check_review(document, settings, moment, blockers)
-    risk_flags = [str(flag) for flag in classification.get("riskFlags", []) if str(flag).strip()]
+    review = _check_review(document, taxonomy, settings, moment, blockers)
+    # Flags come from the recomputed review rather than the raw classifier output,
+    # so a flag a reviewer has already resolved stops blocking, and object-shaped
+    # risk flags keep the reviewer-facing wording instead of a Python repr.
+    risk_flags = review["unresolvedFlags"]
 
-    if classification.get("reviewRequired") is True:
-        blockers.append("The classifier marked this document as requiring review.")
     if risk_flags:
-        blockers.append(f"Risk flags raised: {', '.join(risk_flags)}.")
+        blockers.append(f"Unresolved classification flags: {'; '.join(risk_flags)}.")
     if not classification:
         blockers.append("No taxonomy classification has been generated for this document.")
 
@@ -182,7 +184,7 @@ def _assess_document(
         "tags": tags,
         "confidence": confidence,
         "review": review,
-        "riskFlags": risk_flags,
+        "unresolvedFlags": risk_flags,
         "blockers": blockers,
         "recommendedAction": _recommended_action(disposition, review, blockers),
     }
@@ -274,12 +276,14 @@ def _check_confidence(classification: dict, settings: TriageSettings, blockers: 
 
 def _check_review(
     document: dict,
+    taxonomy: Taxonomy | None,
     settings: TriageSettings,
     moment: datetime,
     blockers: list[str],
 ) -> dict:
-    review = document.get("metadataReview")
-    review = review if isinstance(review, dict) else metadata_review(document, "")
+    # Recomputed rather than read from storage so resolved flags and field
+    # decisions are reflected, and derived flags match what the reviewer sees.
+    review = metadata_review(document, "", taxonomy)
     fields = review.get("fields") if isinstance(review.get("fields"), dict) else {}
     unresolved = [
         ALL_REVIEW_FIELDS.get(key, key)
@@ -305,6 +309,13 @@ def _check_review(
         "state": state,
         "status": review.get("status", "needs-review"),
         "unresolvedFields": sorted(unresolved),
+        "unresolvedFlags": [
+            str(flag.get("message") or flag.get("id") or "").strip()
+            for flag in (review.get("classificationFlags") or [])
+            if isinstance(flag, dict)
+            and flag.get("status") != "resolved"
+            and str(flag.get("message") or flag.get("id") or "").strip()
+        ],
         "waitingDays": waiting_days,
         "slaDays": settings.review_sla_days,
         "reviewedBy": review.get("reviewedBy"),

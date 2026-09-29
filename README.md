@@ -182,15 +182,19 @@ knowledge.
 
 This requires semantic ranking. Hybrid search scores barely move between a
 relevant and an irrelevant chunk, so they cannot drive abstention; the reranker's
-0-4 score can. Enable it on the Search service and set
-`SEARCH_USE_SEMANTIC_RANKER=true`:
+0-4 score can. `SEARCH_USE_SEMANTIC_RANKER` is therefore on by default, and the
+Bicep template provisions the service with semantic search enabled. For an
+existing service:
 
 ```powershell
 az search service update --name <search-service> --resource-group <rg> --semantic-search free
 ```
 
-If search is not configured the chat still responds, reports that approved-content
-search is unavailable, and declines to answer the question from other sources.
+If a hit arrives without a reranker score, relevance is unknown rather than
+acceptable, so the librarian treats it as no evidence instead of answering from
+something nobody has judged. If search is not configured or fails, the chat still
+responds, reports that approved-content search is unavailable, and declines to
+answer the question from other sources.
 
 Triage requests and metadata change requests skip retrieval, so the maintenance
 conversation is unaffected.
@@ -292,15 +296,19 @@ fails, the approval still stands and the reason is reported.
 
 Index membership is maintained in both directions:
 
-- Losing approval **removes** the document's chunks. Approval status is frozen
-  into each chunk at index time, so withdrawal has to be explicit.
+- Losing approval **removes** the document's chunks, at the moment approval is
+  revoked rather than at the next reindex. Editing a reviewed field or resolving
+  a classification flag both return a document to `needs-review`, and each
+  withdraws it from the answer index straight away.
 - Re-indexing a new version **replaces** the previous one. Chunk ids are keyed on
   document and position rather than version, so versions overwrite in place
   instead of accumulating.
 
 Deletions are computed from known chunk counts rather than discovered by
 querying, because Azure AI Search indexes asynchronously and a just-written
-document is not immediately searchable.
+document is not immediately searchable. Those known ids are deleted first, and a
+query sweep runs afterwards only to reconcile leftovers, so a failing sweep can
+never leave revoked content in the index.
 
 If you change the chunk-id scheme, purge the index and rebuild — chunks written
 under the old scheme can no longer be addressed and would linger as orphans.

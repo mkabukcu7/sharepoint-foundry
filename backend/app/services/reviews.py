@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import Lock
+from threading import RLock
 
 from backend.app.services.extractors import extract_labeled_value, extract_text
 from backend.app.services.storage import load_documents, save_documents
@@ -30,7 +30,17 @@ TAXONOMY_REVIEW_FIELDS: dict[str, dict] = {
 REQUIRED_TAXONOMY_FIELDS = ("materialType", "topics")
 ALL_REVIEW_FIELDS = {**REVIEW_FIELDS, **{key: spec["label"] for key, spec in TAXONOMY_REVIEW_FIELDS.items()}}
 REVIEW_DECISIONS = {"accepted", "edited", "rejected"}
-_review_lock = Lock()
+# Reentrant so a caller already holding the lock can nest a read-modify-write.
+_review_lock = RLock()
+
+
+def review_lock():
+    """The lock guarding read-modify-write cycles over the document catalog.
+
+    Every writer must hold it. Saving a catalog snapshot that was read before a
+    concurrent approval would otherwise silently discard that approval.
+    """
+    return _review_lock
 
 
 def _load_taxonomy() -> Taxonomy | None:

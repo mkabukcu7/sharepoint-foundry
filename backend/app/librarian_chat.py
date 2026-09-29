@@ -419,7 +419,7 @@ def _triage_digest(report: dict) -> dict:
                 "unresolvedFields": item.get("review", {}).get("unresolvedFields", []),
                 "lowestConfidence": item.get("confidence", {}).get("lowest"),
                 "unknownTags": [tag.get("value") for tag in item.get("tags", {}).get("unknown", [])],
-                "riskFlags": item.get("riskFlags", []),
+                "unresolvedFlags": item.get("unresolvedFlags", []),
                 "blockers": item.get("blockers", []),
                 "recommendedAction": item.get("recommendedAction"),
             }

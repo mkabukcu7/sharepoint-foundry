@@ -165,19 +165,44 @@ def chunk_text(text: str, size: int = 1200, overlap: int = 150) -> list[str]:
 DEFAULT_MIN_RERANKER_SCORE = 1.9
 
 
-def _relevant_only(matches: list[dict]) -> list[dict]:
+def _semantic_ranking_enabled() -> bool:
+    """Semantic ranking is on unless an operator explicitly turns it off.
+
+    Abstention depends on the reranker score, so defaulting this off would make a
+    fresh deployment answer from weak evidence without anyone choosing that.
+    """
+    return os.getenv("SEARCH_USE_SEMANTIC_RANKER", "true").strip().lower() in {"1", "true", "yes"}
+
+
+def _relevant_only(matches: list[dict], semantic_enabled: bool) -> list[dict]:
     """Drop weak hits so an unanswerable question yields no evidence.
 
     Hybrid RRF scores sit in a narrow band (~0.03) whether or not a chunk is
-    relevant, so they cannot support abstention. The semantic reranker score
-    (0-4) can, and is applied whenever the reranker returned one.
+    relevant, so they cannot support abstention. Only the semantic reranker score
+    (0-4) separates supported from unsupported questions.
+
+    A missing reranker score therefore means relevance is unknown, not that the
+    hit is good. Returning unscored hits would let the librarian answer from
+    evidence nobody has judged, so this raises and the caller degrades to its
+    "search unavailable" path instead.
     """
+    if not matches:
+        return []
+    if not semantic_enabled:
+        raise SearchOperationError(
+            "Semantic ranking is disabled, so retrieved passages cannot be scored for "
+            "relevance. Set SEARCH_USE_SEMANTIC_RANKER=true; without it weak and strong "
+            "evidence are indistinguishable."
+        )
+    if not any(match.get("rerankerScore") is not None for match in matches):
+        raise SearchOperationError(
+            "The search service returned no reranker scores, so relevance could not be "
+            "judged. Check that semantic ranking is enabled on the search service."
+        )
     try:
         threshold = float(os.getenv("SEARCH_MIN_RERANKER_SCORE", DEFAULT_MIN_RERANKER_SCORE))
     except ValueError:
         threshold = DEFAULT_MIN_RERANKER_SCORE
-    if not any(match.get("rerankerScore") is not None for match in matches):
-        return matches
     return [
         match
         for match in matches
@@ -235,12 +260,25 @@ class ApprovedKnowledgeSearch:
         document from the library must also withdraw its chunks.
 
         ``known_chunk_count`` is the chunk count recorded when the document was
-        last indexed. Deleting those ids directly is deterministic and immune to
-        indexing lag; a query sweep then catches anything left over.
+        last indexed. Those ids are deleted first because they are deterministic
+        and immune to indexing lag. The query sweep that follows is only a
+        reconciliation backstop, so its failure must not prevent the deletion.
         """
-        ids = {_chunk_id(document_name, number) for number in range(max(known_chunk_count, 0))}
-        ids.update(self.chunk_ids_for(document_name))
-        return self._delete_ids(document_name, sorted(ids))
+        known = [_chunk_id(document_name, number) for number in range(max(known_chunk_count, 0))]
+        removed: set[str] = set()
+        if known:
+            self._delete_ids(document_name, known)
+            removed.update(known)
+        try:
+            extra = [chunk_id for chunk_id in self.chunk_ids_for(document_name) if chunk_id not in removed]
+        except SearchOperationError:
+            if not known:
+                raise
+            return len(removed)
+        if extra:
+            self._delete_ids(document_name, extra)
+            removed.update(extra)
+        return len(removed)
 
     def _delete_ids(self, document_name: str, ids: list[str]) -> int:
         if not ids:
@@ -313,7 +351,7 @@ class ApprovedKnowledgeSearch:
             k_nearest_neighbors=max(top * 2, 10),
             fields="contentVector",
         )
-        use_semantic = os.getenv("SEARCH_USE_SEMANTIC_RANKER", "").strip().lower() in {"1", "true", "yes"}
+        use_semantic = _semantic_ranking_enabled()
         search_options = {
             "search_text": question,
             "vector_queries": [vector_query],
@@ -323,23 +361,29 @@ class ApprovedKnowledgeSearch:
         }
         if use_semantic:
             search_options["semantic_configuration_name"] = "semantic-config"
-        results = self.search_client.search(**search_options)
-        matches = [
-            {
-                "score": result.get("@search.score"),
-                "rerankerScore": result.get("@search.reranker_score")
-                or result.get("@search.rerankerScore"),
-                "content": result.get("content", ""),
-                "citation": {
-                    "documentName": result.get("sourceDocument", ""),
-                    "sourceUrl": result.get("sourceUrl", ""),
-                    "chunkNumber": result.get("chunkNumber"),
-                    "sourceVersion": result.get("sourceVersion", ""),
-                },
-            }
-            for result in results
-        ]
-        return _relevant_only(matches)
+        # Results are a lazy pager, so service and network failures can surface
+        # during iteration rather than at the call. Both are wrapped here so the
+        # caller sees SearchOperationError and degrades instead of crashing.
+        try:
+            results = self.search_client.search(**search_options)
+            matches = [
+                {
+                    "score": result.get("@search.score"),
+                    "rerankerScore": result.get("@search.reranker_score")
+                    or result.get("@search.rerankerScore"),
+                    "content": result.get("content", ""),
+                    "citation": {
+                        "documentName": result.get("sourceDocument", ""),
+                        "sourceUrl": result.get("sourceUrl", ""),
+                        "chunkNumber": result.get("chunkNumber"),
+                        "sourceVersion": result.get("sourceVersion", ""),
+                    },
+                }
+                for result in results
+            ]
+        except (HttpResponseError, ServiceRequestError) as error:
+            raise SearchOperationError(f"Approved-knowledge search failed: {error}") from error
+        return _relevant_only(matches, use_semantic)
 
     def _embed(self, inputs: list[str]) -> list[list[float]]:
         try:

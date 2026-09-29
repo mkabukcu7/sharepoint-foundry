@@ -38,6 +38,20 @@ def _document(
         key: {"label": key, "value": "Set", "reviewDecision": review_decisions}
         for key in ("businessArea", "audience", "language", "author", "countryOfOrigin")
     }
+    # Triage recomputes the review, so a document is only genuinely clean when the
+    # controlled-taxonomy fields have been decided too. The approval gate requires
+    # all twelve, and triage must agree with it.
+    fields.update(
+        {
+            "materialType": {"label": "Material type", "value": "Report", "reviewDecision": review_decisions},
+            "topics": {"label": "Topics", "value": ["Skills"], "reviewDecision": review_decisions},
+            "businesses": {"label": "Businesses", "value": [], "reviewDecision": review_decisions},
+            "industries": {"label": "Industries", "value": [], "reviewDecision": review_decisions},
+            "geographies": {"label": "Geographies", "value": [], "reviewDecision": review_decisions},
+            "collections": {"label": "Collections", "value": [], "reviewDecision": review_decisions},
+            "languages": {"label": "Taxonomy languages", "value": ["English"], "reviewDecision": review_decisions},
+        }
+    )
     return {
         "documentName": name,
         "sharePointStage": {"status": "staged", "stagedAt": staged_at},
@@ -148,8 +162,51 @@ def test_risk_flags_and_review_required_block_approval() -> None:
     item = _triage([document])["items"][0]
 
     assert item["disposition"] == "needs-attention"
-    assert item["riskFlags"] == ["Client names present"]
-    assert any("requiring review" in blocker for blocker in item["blockers"])
+    assert any("Client names present" in flag for flag in item["unresolvedFlags"])
+    assert any("requiring human review" in flag for flag in item["unresolvedFlags"])
+    assert any("Client names present" in blocker for blocker in item["blockers"])
+
+
+def test_resolved_flags_stop_blocking_approval() -> None:
+    """A reviewer who has acknowledged a flag should not keep seeing it as a blocker."""
+    document = _document(
+        classification={
+            "summary": GOOD_SUMMARY,
+            "materialType": {"value": "Report", "confidence": 0.95, "evidence": "Cover"},
+            "topics": [{"value": "Skills", "confidence": 0.95, "evidence": "Section 2"}],
+            "reviewRequired": True,
+            "riskFlags": ["Client names present"],
+        }
+    )
+    document["metadataReview"]["classificationFlags"] = [
+        {"id": "review-required", "status": "resolved", "resolvedBy": "Ada"},
+        {"id": "risk:client names present", "status": "resolved", "resolvedBy": "Ada"},
+    ]
+
+    item = _triage([document])["items"][0]
+
+    assert item["unresolvedFlags"] == []
+    assert item["disposition"] == "ready-for-approval"
+
+
+def test_object_shaped_risk_flags_read_as_prose() -> None:
+    """Risk flags arrive as dicts too; a Python repr must never reach a reviewer."""
+    document = _document(
+        classification={
+            "summary": GOOD_SUMMARY,
+            "materialType": {"value": "Report", "confidence": 0.95, "evidence": "Cover"},
+            "topics": [{"value": "Skills", "confidence": 0.95, "evidence": "Section 2"}],
+            "reviewRequired": False,
+            "riskFlags": [{"flag": "pricing", "evidence": "Rate card on page 4."}],
+        }
+    )
+
+    item = _triage([document])["items"][0]
+
+    joined = " ".join(item["unresolvedFlags"]) + " ".join(item["blockers"])
+    assert "pricing" in joined
+    assert "Rate card on page 4." in joined
+    assert "{" not in joined and "'flag'" not in joined
 
 
 def test_unresolved_review_fields_block_approval() -> None:

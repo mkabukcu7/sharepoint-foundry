@@ -841,7 +841,7 @@
         const reset = element("button", { type: "button", className: "secondary" }, "Publish as new document instead");
         reset.onclick = () => updateVersionAction(details, "new-document", reset);
         actions.append(reset);
-        section.append(element("p", {}, "Approval will replace the existing file’s content in place. SharePoint assigns the version; the staged source copy is retained."));
+        section.append(element("p", {}, "Approval will replace the existing file’s content in place. SharePoint assigns the version, and the staged source copy is moved to the Archive folder once the new version is confirmed. It stays in Staging only if archiving fails."));
       }
       section.append(actions);
       panel.append(section);

@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
+from azure.core.exceptions import HttpResponseError, ServiceRequestError
+
 from backend.app.models.document import (
     ClassificationFlagResolution,
     MetadataApproval,
@@ -24,6 +26,7 @@ from backend.app.services.reviews import (
     metadata_review,
     resolve_classification_flag,
     retry_metadata_writeback,
+    review_lock,
     update_field_review,
     update_version_action,
 )
@@ -204,11 +207,17 @@ def review_document_field(document_name: str, update: MetadataReviewUpdate) -> d
     if Path(document_name).name != document_name:
         raise HTTPException(status_code=400, detail="Invalid document name")
     try:
-        return update_field_review(DATA_PATH, SAMPLE_DOCS, document_name, update.field, update.decision, update.value)
+        document = update_field_review(
+            DATA_PATH, SAMPLE_DOCS, document_name, update.field, update.decision, update.value
+        )
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Document not found") from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+    withdrawn = _withdraw_from_index(document)
+    if withdrawn is not None:
+        document["searchIndex"] = withdrawn
+    return document
 
 
 @app.get("/api/documents/{document_name}/sharepoint/version-candidate")
@@ -235,7 +244,7 @@ def resolve_document_classification_flag(
     if Path(document_name).name != document_name:
         raise HTTPException(status_code=400, detail="Invalid document name")
     try:
-        return resolve_classification_flag(
+        document = resolve_classification_flag(
             DATA_PATH,
             SAMPLE_DOCS,
             document_name,
@@ -247,6 +256,10 @@ def resolve_document_classification_flag(
         raise HTTPException(status_code=404, detail="Document or classification flag not found") from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+    withdrawn = _withdraw_from_index(document)
+    if withdrawn is not None:
+        document["searchIndex"] = withdrawn
+    return document
 
 
 @app.patch("/api/documents/{document_name}/review/version-action")
@@ -308,6 +321,15 @@ def _index_single_document(document_name: str) -> dict:
         search.ensure_index()
     except SearchConfigurationError as error:
         return {"status": "skipped", "reason": f"Search is not configured: {error}"}
+    except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+        # The approval itself already succeeded and must stand. A 403, outage or
+        # timeout here is an indexing failure to report, not a failed approval.
+        status = {
+            "status": "failed",
+            "error": f"Could not prepare the search index: {error}",
+        }
+        _record_index_status(document_name, status)
+        return status
 
     documents = load_documents(DATA_PATH)
     document = next(
@@ -323,7 +345,7 @@ def _index_single_document(document_name: str) -> dict:
         return {"status": "blocked", "reason": "Document is not human-approved and published."}
     try:
         chunks = search.index_document(document, text)
-    except (SearchOperationError, SearchConfigurationError) as error:
+    except (SearchOperationError, SearchConfigurationError, HttpResponseError, ServiceRequestError) as error:
         status = {"status": "failed", "error": str(error)}
         _record_index_status(document_name, status)
         return status
@@ -332,13 +354,73 @@ def _index_single_document(document_name: str) -> dict:
     return status
 
 
+def _current_document(document_name: str) -> dict | None:
+    """Read one document as it stands right now.
+
+    Long indexing runs must not act on a stale snapshot, so each document is
+    re-read immediately before it is used.
+    """
+    with review_lock():
+        for document in load_documents(DATA_PATH):
+            if document.get("documentName") == document_name:
+                return document
+    return None
+
+
 def _record_index_status(document_name: str, status: dict) -> None:
-    documents = load_documents(DATA_PATH)
-    for document in documents:
-        if document.get("documentName") == document_name:
-            document["searchIndex"] = status
-            break
-    save_documents(documents, DATA_PATH)
+    """Persist one document's index status without clobbering concurrent edits.
+
+    The review lock is shared with the review service, so this read-modify-write
+    cannot interleave with an approval or field edit and lose it.
+    """
+    with review_lock():
+        documents = load_documents(DATA_PATH)
+        for document in documents:
+            if document.get("documentName") == document_name:
+                document["searchIndex"] = status
+                break
+        save_documents(documents, DATA_PATH)
+
+
+def _withdraw_from_index(document: dict) -> dict | None:
+    """Remove a document's chunks once it is no longer approved for answering.
+
+    Approval status is frozen into each chunk at index time, so a review edit
+    that returns a document to `needs-review` has to withdraw it here. Waiting
+    for the next full reindex would leave un-approved content citable.
+    """
+    document_name = document.get("documentName", "")
+    previous = document.get("searchIndex")
+    previous = previous if isinstance(previous, dict) else {}
+    if not document_name or previous.get("status") != "indexed":
+        return None
+    if is_search_eligible(document):
+        return None
+    try:
+        search = ApprovedKnowledgeSearch()
+    except SearchConfigurationError:
+        # Search is not configured, so there is nothing indexed to withdraw.
+        return None
+    try:
+        removed = search.remove_document(
+            document_name, known_chunk_count=int(previous.get("chunks") or 0)
+        )
+    except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+        status = {
+            "status": "withdrawal-failed",
+            "error": str(error),
+            "reason": "Approval was revoked but the indexed chunks could not be removed.",
+            "chunks": previous.get("chunks"),
+        }
+        _record_index_status(document_name, status)
+        return status
+    status = {
+        "status": "withdrawn",
+        "reason": "Approval was revoked, so the document was removed from the answer index.",
+        "removedChunks": removed,
+    }
+    _record_index_status(document_name, status)
+    return status
 
 
 @app.post("/api/documents/{document_name}/review/writeback/retry")
@@ -377,51 +459,59 @@ def index_approved_documents() -> dict:
         search.ensure_index()
     except SearchConfigurationError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+    except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+        raise HTTPException(status_code=502, detail=f"Could not prepare the search index: {error}") from error
 
-    documents = load_documents(DATA_PATH)
+    names = [
+        str(document.get("documentName", ""))
+        for document in load_documents(DATA_PATH)
+        if document.get("documentName")
+    ]
     indexed = 0
     blocked = 0
     failed = 0
     removed = 0
-    for document in documents:
-        path = SAMPLE_DOCS / document.get("documentName", "")
+    # Embedding and Search calls are slow, so each document is re-read immediately
+    # before use and only its own searchIndex entry is written back. Saving the
+    # snapshot this loop started from would discard approvals made while it ran.
+    for name in names:
+        document = _current_document(name)
+        if document is None:
+            continue
+        path = SAMPLE_DOCS / name
         text = extract_text(path) if path.is_file() else ""
         document["metadataReview"] = metadata_review(document, text)
         if not is_search_eligible(document):
             # Approval status is frozen into each chunk at index time, so a
             # document that loses approval must be withdrawn from the index too.
-            withdrawn = 0
             try:
                 previous = document.get("searchIndex")
                 previous_count = previous.get("chunks", 0) if isinstance(previous, dict) else 0
-                withdrawn = search.remove_document(
-                    document.get("documentName", ""), known_chunk_count=int(previous_count or 0)
-                )
-            except SearchOperationError as error:
-                document["searchIndex"] = {"status": "failed", "error": str(error)}
+                withdrawn = search.remove_document(name, known_chunk_count=int(previous_count or 0))
+            except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+                _record_index_status(name, {"status": "failed", "error": str(error)})
                 failed += 1
                 continue
             removed += withdrawn
-            document["searchIndex"] = {
+            _record_index_status(name, {
                 "status": "blocked",
                 "reason": "Document is not human-approved and published.",
                 "removedChunks": withdrawn,
-            }
+            })
             blocked += 1
             continue
         try:
             chunks = search.index_document(document, text)
-        except SearchOperationError as error:
-            document["searchIndex"] = {"status": "failed", "error": str(error)}
+        except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+            _record_index_status(name, {"status": "failed", "error": str(error)})
             failed += 1
             continue
-        document["searchIndex"] = {
+        _record_index_status(name, {
             "status": "indexed",
             "index": search.settings.index_name,
             "chunks": chunks,
-        }
+        })
         indexed += 1
-    save_documents(documents, DATA_PATH)
     return {
         "status": "ok" if failed == 0 else "partial",
         "indexed": indexed,

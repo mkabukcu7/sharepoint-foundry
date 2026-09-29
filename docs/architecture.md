@@ -115,6 +115,16 @@ the librarian's retrieval path are live. Employee authentication and ACL trimmin
 - The existing Microsoft Foundry project and a model for grounded answer generation
 - Managed identities and RBAC between the application, Search, Storage, and Foundry
 
+The application principal needs two Search roles, not one:
+
+- **Search Index Data Contributor** for indexing and querying documents.
+- **Search Service Contributor** because the application calls
+  `SearchIndexClient.create_or_update_index` at startup. Index schema management
+  is not a document operation, so the data role alone returns 403 there.
+
+`infra/modules/search-service.bicep` assigns both when `applicationPrincipalId`
+is supplied, and provisions the service with semantic search enabled.
+
 ### Proposed search document
 
 Each indexed chunk should include:
@@ -179,8 +189,16 @@ instructed to state that it found no approved evidence, and is explicitly
 forbidden from answering from file names, folder listings, or model knowledge.
 
 This makes semantic ranking a correctness requirement for the answer agent, not
-an optional relevance improvement. `SEARCH_USE_SEMANTIC_RANKER` must be enabled
-and the Search service must have semantic search turned on.
+an optional relevance improvement. `SEARCH_USE_SEMANTIC_RANKER` therefore
+defaults to enabled, and the Search service must have semantic search turned on;
+the Bicep template provisions it so a fresh deployment satisfies this by default.
+
+A missing reranker score means relevance is unknown, not that the hit is good.
+Returning unscored hits would let the librarian answer from evidence nobody has
+judged, so retrieval raises instead and the chat degrades to its documented
+"search unavailable" reply. Search failures are translated the same way, both at
+the call and during result iteration, because the SDK returns a lazy pager that
+can fail after the call appears to have succeeded.
 
 Two further constraints follow from live testing:
 
@@ -195,8 +213,13 @@ Two further constraints follow from live testing:
 Approval status is written into each chunk at index time and the query filter
 trusts those frozen values, so index membership must be maintained actively.
 
-- **Withdrawal.** When a document loses approval, re-indexing deletes its chunks
-  rather than skipping it. Without this a revoked document stays citable forever.
+- **Withdrawal.** When a document loses approval, its chunks are deleted rather
+  than skipped. This happens at the moment approval is revoked — editing a
+  reviewed field or resolving a classification flag both return a document to
+  `needs-review` — and not only during a full re-index. Waiting for the next
+  re-index would leave un-approved content citable in the meantime. A withdrawal
+  that fails is recorded as `withdrawal-failed` on the document rather than
+  passing silently.
 - **Supersession.** Chunk ids are keyed on document name and chunk position, not
   version, so re-indexing a new version overwrites the previous one in place. An
   earlier version-keyed scheme made ids diverge, leaving old and new guidance in
@@ -207,12 +230,22 @@ trusts those frozen values, so index membership must be maintained actively.
 Deletion never depends on querying for what to remove. Azure AI Search indexes
 asynchronously, so a document written moments earlier is not yet returned by
 search; a read-based purge silently missed chunks and could retain the wrong
-version. Ids are computed instead, with a query sweep only as a reconciliation
-backstop. Both behaviours are covered by tests that simulate indexing lag.
+version. Ids are computed instead, and they are deleted first: the query sweep
+runs afterwards purely as a reconciliation backstop, so a sweep that fails
+cannot prevent known chunks from being removed. Both behaviours are covered by
+tests that simulate indexing lag and sweep failure.
 
 Approving a document indexes that document immediately, so it becomes answerable
 without a separate full-corpus pass. An indexing failure is reported on the
-approval response and does not roll back an approval that already succeeded.
+approval response and does not roll back an approval that already succeeded;
+this includes permission, outage and timeout errors raised while preparing the
+index, which are recorded as a failed index status rather than surfacing as a
+failed approval.
+
+A full re-index re-reads each document immediately before use and writes back
+only that document's index status, under the same lock the review service uses.
+Saving the catalog snapshot the run started from would discard any approval made
+while the run was in progress.
 
 Changing the chunk-id scheme orphans existing chunks, because the old ids are no
 longer derivable. Purge the index and rebuild when the scheme changes.

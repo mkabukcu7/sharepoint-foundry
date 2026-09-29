@@ -1,7 +1,11 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from fastapi.testclient import TestClient
+
+from backend.app.main import app
 from backend.app.services.reviews import (
     ALL_REVIEW_FIELDS,
     REVIEW_FIELDS,
@@ -11,6 +15,7 @@ from backend.app.services.reviews import (
     unresolved_review_items,
     update_field_review,
 )
+from backend.app.services.search import SearchOperationError
 from backend.app.services.storage import save_documents
 from backend.app.services.writeback import _column_value
 
@@ -308,3 +313,106 @@ class RiskFlagShapeTests(unittest.TestCase):
         flag = [item for item in updated["metadataReview"]["classificationFlags"] if item["type"] == "risk"][0]
         self.assertEqual(flag["status"], "resolved")
         self.assertEqual(flag["resolvedBy"], "Ada Reviewer")
+
+
+class IndexWithdrawalOnRevocationTests(unittest.TestCase):
+    """Approval is frozen into each indexed chunk, so revoking it must withdraw them.
+
+    Waiting for the next full reindex would leave un-approved content answerable.
+    """
+
+    def setUp(self) -> None:
+        self._directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self._directory.cleanup)
+        root = Path(self._directory.name)
+        self.data_path = root / "metadata.json"
+        self.source_dir = root / "documents"
+        self.source_dir.mkdir()
+        self.client = TestClient(app)
+        self.removed: list[tuple[str, int]] = []
+
+        service = self
+
+        class FakeSearch:
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                service.removed.append((name, known_chunk_count))
+                return known_chunk_count
+
+        self.fake_search = FakeSearch
+
+    def _save_approved(self) -> None:
+        document = _document()
+        document["metadataReview"] = {"status": "approved", "reviewedBy": "Ada Reviewer"}
+        document["searchIndex"] = {"status": "indexed", "chunks": 3}
+        save_documents([document], self.data_path)
+
+    def _patch(self):
+        return (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", self.fake_search),
+        )
+
+    def test_editing_a_field_withdraws_the_document_from_the_answer_index(self) -> None:
+        self._save_approved()
+        first, second, third = self._patch()
+        with first, second, third:
+            response = self.client.patch(
+                "/api/documents/guide.pdf/review",
+                json={"field": "author", "decision": "edited", "value": "Grace Hopper"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.removed, [("guide.pdf", 3)])
+        self.assertEqual(response.json()["searchIndex"]["status"], "withdrawn")
+
+    def test_resolving_a_flag_withdraws_the_document_from_the_answer_index(self) -> None:
+        document = _document(reviewRequired=True)
+        document["metadataReview"] = {"status": "approved", "reviewedBy": "Ada Reviewer"}
+        document["searchIndex"] = {"status": "indexed", "chunks": 2}
+        save_documents([document], self.data_path)
+        first, second, third = self._patch()
+        with first, second, third:
+            response = self.client.post(
+                "/api/documents/guide.pdf/review/flags/resolve",
+                json={"flagId": "review-required", "reviewer": "Ada Reviewer", "note": "Checked."},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.removed, [("guide.pdf", 2)])
+
+    def test_a_document_that_was_never_indexed_is_not_withdrawn(self) -> None:
+        document = _document()
+        document["metadataReview"] = {"status": "approved", "reviewedBy": "Ada Reviewer"}
+        save_documents([document], self.data_path)
+        first, second, third = self._patch()
+        with first, second, third:
+            response = self.client.patch(
+                "/api/documents/guide.pdf/review",
+                json={"field": "author", "decision": "edited", "value": "Grace Hopper"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.removed, [])
+
+    def test_a_failed_withdrawal_is_recorded_rather_than_hidden(self) -> None:
+        self._save_approved()
+
+        class BrokenSearch:
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                raise SearchOperationError("index unreachable")
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", BrokenSearch),
+        ):
+            response = self.client.patch(
+                "/api/documents/guide.pdf/review",
+                json={"field": "author", "decision": "edited", "value": "Grace Hopper"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        status = response.json()["searchIndex"]
+        self.assertEqual(status["status"], "withdrawal-failed")
+        self.assertIn("index unreachable", status["error"])

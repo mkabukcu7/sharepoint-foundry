@@ -1,5 +1,9 @@
+import os
 import unittest
 from types import SimpleNamespace
+from unittest import mock
+
+from azure.core.exceptions import HttpResponseError, ServiceRequestError
 
 from backend.app.services import search
 from backend.app.services.search import (
@@ -22,14 +26,27 @@ class FakeOpenAI:
     embeddings = FakeEmbeddings()
 
 
+class _FailingPager:
+    """Mimics the SDK pager raising only once iteration begins."""
+
+    def __iter__(self):
+        raise HttpResponseError("search service failed while paging")
+        yield  # pragma: no cover - never reached, marks this a generator
+
+
 class FakeSearchClient:
     """A small in-memory stand-in that upserts, deletes and filters like the real index."""
 
-    def __init__(self) -> None:
+    def __init__(self, reranker_score: float | None = 3.0) -> None:
         self.documents = []
         self.options = None
         self.query_options = None
         self.lag = False
+        self.fail_search = False
+        self.fail_iteration = False
+        # The real service returns this whenever semantic ranking is on, and the
+        # librarian judges evidence by it.
+        self.reranker_score = reranker_score
 
     def upload_documents(self, documents: list[dict]) -> None:
         for document in documents:
@@ -42,6 +59,8 @@ class FakeSearchClient:
 
     def search(self, **options: object) -> list[dict]:
         self.options = options
+        if self.fail_search:
+            raise ServiceRequestError("search service unreachable")
         filter_text = str(options.get("filter") or "")
         if filter_text.startswith("sourceDocument eq "):
             if self.lag:
@@ -50,9 +69,12 @@ class FakeSearchClient:
             wanted = literal[1:-1].replace("''", "'")
             return [item for item in self.documents if item["sourceDocument"] == wanted]
         self.query_options = options
+        if self.fail_iteration:
+            return _FailingPager()
         return [
             {
                 "@search.score": 1.0,
+                "@search.reranker_score": self.reranker_score,
                 "content": item["content"],
                 "sourceDocument": item["sourceDocument"],
                 "sourceUrl": item["sourceUrl"],
@@ -153,19 +175,45 @@ class RelevanceThresholdTests(unittest.TestCase):
             {"rerankerScore": 1.6, "content": "noise"},
         ]
 
-        kept = search._relevant_only(matches)
+        kept = search._relevant_only(matches, semantic_enabled=True)
 
         self.assertEqual([match["content"] for match in kept], ["relevant"])
 
     def test_all_weak_hits_yield_no_evidence(self) -> None:
         matches = [{"rerankerScore": 1.1}, {"rerankerScore": 0.9}]
 
-        self.assertEqual(search._relevant_only(matches), [])
+        self.assertEqual(search._relevant_only(matches, semantic_enabled=True), [])
 
-    def test_results_without_reranker_scores_are_kept(self) -> None:
+    def test_results_without_reranker_scores_are_not_treated_as_evidence(self) -> None:
+        """An unscored hit means relevance is unknown, not that the hit is good.
+
+        Keeping these would let the librarian answer from evidence nobody has
+        judged, because hybrid scores cannot tell relevant from irrelevant.
+        """
         matches = [{"rerankerScore": None, "score": 0.03}]
 
-        self.assertEqual(search._relevant_only(matches), matches)
+        with self.assertRaises(search.SearchOperationError) as caught:
+            search._relevant_only(matches, semantic_enabled=True)
+
+        self.assertIn("reranker", str(caught.exception).lower())
+
+    def test_disabled_semantic_ranking_refuses_to_judge_relevance(self) -> None:
+        matches = [{"rerankerScore": None, "score": 0.03}]
+
+        with self.assertRaises(search.SearchOperationError) as caught:
+            search._relevant_only(matches, semantic_enabled=False)
+
+        self.assertIn("SEARCH_USE_SEMANTIC_RANKER", str(caught.exception))
+
+    def test_no_matches_needs_no_reranker(self) -> None:
+        self.assertEqual(search._relevant_only([], semantic_enabled=False), [])
+
+    def test_semantic_ranking_is_on_unless_explicitly_disabled(self) -> None:
+        """Defaulting this off would silently remove abstention on a fresh deploy."""
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertTrue(search._semantic_ranking_enabled())
+        with mock.patch.dict(os.environ, {"SEARCH_USE_SEMANTIC_RANKER": "false"}, clear=True):
+            self.assertFalse(search._semantic_ranking_enabled())
 
 
 class IndexLifecycleTests(unittest.TestCase):
@@ -251,6 +299,39 @@ class IndexLifecycleTests(unittest.TestCase):
 
     def test_removing_an_unindexed_document_is_a_no_op(self) -> None:
         self.assertEqual(self.search.remove_document("never-indexed.docx"), 0)
+
+    def test_known_chunks_are_deleted_even_when_the_sweep_fails(self) -> None:
+        """The sweep is a backstop. A failing sweep must not leave revoked content citable."""
+        chunks = self.search.index_document(self._document("2.0"), "Approved guidance. " * 200)
+        self.assertGreater(chunks, 1)
+        self.search_client.fail_search = True
+
+        removed = self.search.remove_document("policy.docx", known_chunk_count=chunks)
+
+        self.search_client.fail_search = False
+        self.assertEqual(removed, chunks)
+        self.assertEqual(self.search_client.documents, [])
+
+    def test_a_failing_sweep_is_reported_when_nothing_is_known_to_delete(self) -> None:
+        """With no recorded chunk count the sweep is the only source of ids, so silence would hide the failure."""
+        self.search_client.fail_search = True
+
+        with self.assertRaises(search.SearchOperationError):
+            self.search.remove_document("policy.docx")
+
+    def test_query_failures_surface_as_search_operation_errors(self) -> None:
+        """The chat degrades on SearchOperationError; a raw SDK error would crash the turn."""
+        self.search_client.fail_search = True
+
+        with self.assertRaises(search.SearchOperationError):
+            self.search.query("What is approved?")
+
+    def test_query_failures_during_iteration_are_also_wrapped(self) -> None:
+        """Results are a lazy pager, so the failure can arrive after the call returns."""
+        self.search_client.fail_iteration = True
+
+        with self.assertRaises(search.SearchOperationError):
+            self.search.query("What is approved?")
 
     def test_removal_only_touches_the_named_document(self) -> None:
         self.search.index_document(self._document("2.0"), "Policy content.")

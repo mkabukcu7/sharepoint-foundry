@@ -19,6 +19,13 @@ param searchSku string = 'basic'
 @description('Optional Entra service principal object ID for the application that will index and query approved content.')
 param applicationPrincipalId string = ''
 
+@description('Semantic ranker tier. The librarian judges whether it has evidence from the reranker score, so this cannot be disabled without losing abstention.')
+@allowed([
+  'free'
+  'standard'
+])
+param semanticSearchTier string = 'free'
+
 resource searchResourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' existing = {
   name: resourceGroupName
 }
@@ -31,6 +38,7 @@ module searchService './modules/search-service.bicep' = {
     name: searchServiceName
     applicationPrincipalId: applicationPrincipalId
     skuName: searchSku
+    semanticSearchTier: semanticSearchTier
   }
 }
 
