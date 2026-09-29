@@ -34,7 +34,7 @@ Expected, and verified on a clean clone:
 |---|---|
 | `reset_demo` | `Reset 10 documents; 1 approved baseline record(s)` |
 | `demo_preflight` | `Demo preflight passed: 10 documents, 1 approved metadata record(s), 10 taxonomy review item(s)` and `AI_PROVIDER=mock` |
-| `pytest` | `203 passed` |
+| `pytest` | `207 passed` |
 | `GET /api/documents` | HTTP 200, 10 documents |
 
 With no `.env` present the app defaults to `AI_PROVIDER=mock`, which produces
@@ -116,6 +116,29 @@ deployed with `disableLocalAuth: true` (no API keys). **Deploying without the
 application principal now fails before provisioning instead of producing a
 Search service that nothing can authenticate to.** Pass the object ID as shown
 above or assign the roles manually.
+
+The Search deployment above does not create the AI Services resource, project,
+model deployments, or prompt agents. In the Azure AI Foundry portal, complete
+these steps before starting the application:
+
+1. Create an **Azure AI Services** resource (`AIServices`, `S0`) in the target
+   region, then create an AI Foundry project on that resource.
+2. In the project's **Models + endpoints** page, deploy `gpt-5-mini` using the
+   `2025-08-07` model version and deploy `text-embedding-3-small` version `1`.
+   Use the deployment names shown in the configuration block above.
+3. Create the three prompt agents listed below. For
+   `knowledge-librarian-agent`, use `prompts/knowledge-librarian-agent.md` as
+   the instructions; configure the other two with the classifier and
+   extraction prompts used by the reference project. Publish each agent as
+   version `2`.
+4. Copy the project's endpoint into `FOUNDRY_PROJECT_ENDPOINT` and verify that
+   the application identity has **Cognitive Services User** on the AI Services
+   resource.
+
+The portal's agent and model deployment screens are used here deliberately:
+their names and availability vary by subscription, while the required
+deployment names, versions, endpoint, and prompt source are fixed by the
+configuration above.
 
 ---
 

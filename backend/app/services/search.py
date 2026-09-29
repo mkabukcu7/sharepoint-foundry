@@ -387,7 +387,15 @@ class ApprovedKnowledgeSearch:
             }
             for number, (chunk, vector) in enumerate(zip(chunks, vectors))
         ]
-        results = self.search_client.upload_documents(documents=records)
+        try:
+            results = self.search_client.upload_documents(documents=records)
+        except Exception as error:
+            # A request-level failure has an uncertain outcome, so retain every
+            # attempted position id for a later withdrawal.
+            raise SearchOperationError(
+                f"Could not upload {len(records)} chunks for {document['documentName']}: {error}",
+                chunks_left_behind=len(records),
+            ) from error
         failures = _failed_keys(results)
         if failures:
             # Ids are position-keyed, so a partial upload has already overwritten

@@ -17,6 +17,7 @@ param searchServiceName string
 param searchSku string = 'basic'
 
 @description('Entra service principal object ID for the application that will index and query approved content.')
+@minLength(1)
 param applicationPrincipalId string
 
 @description('Semantic ranker tier. The librarian judges whether it has evidence from the reranker score, so this cannot be disabled without losing abstention.')
