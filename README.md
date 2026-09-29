@@ -27,18 +27,33 @@ knowledge-agent-mvp/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py
+│   │   ├── librarian_chat.py
 │   │   ├── models/
 │   │   └── services/
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
 │   └── scripts/
 ├── frontend/
 │   └── static-demo.html
+├── infra/
+│   ├── main.bicep
+│   └── modules/
+├── prompts/
 ├── sample-documents/
+├── tests/
 ├── data/
 │   └── demo-metadata.json
+├── conftest.py
 └── docs/
-	└── architecture.md
+	├── architecture.md
+	└── demo-setup.md
 ```
+
+- [docs/architecture.md](docs/architecture.md) — design, the
+  [as-built flow diagram and Azure resource list](docs/architecture.md#as-built-deployment-and-azure-resources),
+  and the target architecture.
+- [docs/demo-setup.md](docs/demo-setup.md) — provisioning, permissions, and the
+  demo run order.
 
 ## Quick start
 
@@ -48,6 +63,9 @@ The bundled dashboard requires only Python 3.12 or later.
 > [docs/demo-setup.md](docs/demo-setup.md). It covers the Azure resources,
 > RBAC roles, Graph permissions, and the full demo run order. The quick start
 > below is the offline path and needs no Azure access.
+>
+> For how the pieces fit together, see the as-built flow diagram and resource
+> list in [docs/architecture.md](docs/architecture.md#as-built-deployment-and-azure-resources).
 
 From the repository root:
 

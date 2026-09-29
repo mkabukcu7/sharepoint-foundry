@@ -22,6 +22,77 @@ flowchart LR
     C --> L
 ```
 
+## As-built deployment and Azure resources
+
+The flow above is logical. This is what is actually deployed today, with the
+concrete Azure resources each step uses. Setup instructions for all of it are in
+[demo-setup.md](demo-setup.md).
+
+```mermaid
+flowchart LR
+    SP["SharePoint Online<br/>Staging / Reviewed / Archive"]
+    USER(["Reviewer"])
+
+    subgraph local["Developer machine — no hosting resource is deployed"]
+        direction TB
+        API["FastAPI metadata app<br/>backend.app.main : 8000"]
+        CHAT["FastAPI librarian chat<br/>backend.app.librarian_chat : 8010<br/>loopback only, unauthenticated"]
+        JSON[("data/extracted-metadata.json")]
+        TAX[("taxonomy/controlled-terms.json<br/>untracked customer data")]
+    end
+
+    subgraph foundry["Azure AI Foundry — AI Services S0"]
+        direction TB
+        CLS["wtw-metadata-classifier"]
+        EXT["sharepoint-foundry-agent"]
+        LIB["knowledge-librarian-agent"]
+        EMB["text-embedding-3-small<br/>1536 dimensions"]
+        GPT["gpt-5-mini"]
+    end
+
+    IDX[("Azure AI Search — basic<br/>wtw-approved-knowledge<br/>semantic ranker required<br/>approved content only")]
+
+    SP -->|Microsoft Graph| API
+    API --> CLS & EXT
+    CLS --> TAX
+    API --- JSON
+    API -->|"chunk, embed on approval"| EMB
+    EMB --> IDX
+    API -->|"withdraw on revocation"| IDX
+    API -->|"approved metadata, ETag guarded"| SP
+
+    USER -->|"review and named approval"| API
+    USER --> CHAT
+    CHAT --> LIB
+    LIB --> GPT
+    CHAT -->|"hybrid + semantic query"| IDX
+    IDX -->|"cited passages, or none"| CHAT
+```
+
+Points the diagram is making that are easy to miss:
+
+- **Nothing hosts the application.** Both FastAPI processes run locally. The only
+  deployed Azure resources are the Search service and the AI Services account;
+  `infra/` declares the Search service and its two role assignments and nothing
+  else.
+- **The index holds approved content only.** Documents enter on approval and are
+  withdrawn the moment approval is revoked, so the chat can only cite material a
+  named human approved.
+- **Writes never originate from a model.** The agents propose; the application
+  executes against SharePoint with the plan-time ETag after a reviewer approves.
+- **Three distinct agents**, which must not be collapsed into one.
+- **Two regions.** Search is in East US and AI Services in East US 2 in the
+  reference environment. They do not have to match.
+
+| Resource | SKU / tier | Used for |
+|---|---|---|
+| Azure AI Search | basic, semantic ranker `free`, local auth disabled | Approved-content index and grounded retrieval |
+| Azure AI Foundry (AI Services) | S0 | Hosts the three prompt agents |
+| `gpt-5-mini` deployment | GlobalStandard | Classification, extraction, librarian reasoning |
+| `text-embedding-3-small` deployment | Standard, 1536 dims | Chunk and query embeddings |
+| SharePoint Online | — | Source library and write-back target |
+| Entra app registration | — | Graph access, `Sites.Selected` |
+
 ## Components
 
 | Layer | MVP implementation | Production analogue |
