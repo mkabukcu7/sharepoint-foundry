@@ -1,10 +1,13 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from backend.app import main
 from backend.app.main import app
 from backend.app.services.reviews import (
     ALL_REVIEW_FIELDS,
@@ -416,3 +419,118 @@ class IndexWithdrawalOnRevocationTests(unittest.TestCase):
         status = response.json()["searchIndex"]
         self.assertEqual(status["status"], "withdrawal-failed")
         self.assertIn("index unreachable", status["error"])
+
+
+class ConcurrentRevocationDuringIndexingTests(unittest.TestCase):
+    """Indexing embeds and uploads, which is slow.
+
+    If a reviewer revokes approval while that is in flight, the withdrawal can
+    finish first and the in-flight upload would otherwise restore citable chunks
+    for a document nobody approves any more.
+    """
+
+    def setUp(self) -> None:
+        self._directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self._directory.cleanup)
+        root = Path(self._directory.name)
+        self.data_path = root / "metadata.json"
+        self.source_dir = root / "documents"
+        self.source_dir.mkdir()
+
+    def _save(self, status: str, reviewed_at: str = "2026-01-01T00:00:00+00:00") -> None:
+        document = _document()
+        document["metadataReview"] = {
+            "status": status,
+            "reviewedBy": "Ada Reviewer",
+            "reviewedAt": reviewed_at,
+        }
+        save_documents([document], self.data_path)
+
+    def test_a_revoked_snapshot_cannot_commit_indexed_chunks(self) -> None:
+        self._save("approved")
+        revoke = self._save
+        service = self
+
+        class RevokingSearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def index_document(self, document: dict, text: str) -> int:
+                # The reviewer revokes approval while the upload is in flight.
+                revoke("needs-review")
+                return 5
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                service.removed = (name, known_chunk_count)
+                return known_chunk_count
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", RevokingSearch),
+        ):
+            result = main._index_single_document("guide.pdf")
+
+        self.assertEqual(result["status"], "withdrawn")
+        self.assertEqual(self.removed, ("guide.pdf", 5))
+        stored = json.loads(self.data_path.read_text(encoding="utf-8"))[0]
+        self.assertNotEqual(stored["searchIndex"]["status"], "indexed")
+
+    def test_a_re_approval_during_indexing_also_invalidates_the_write(self) -> None:
+        """A different approval is still a different snapshot, even though both are approved."""
+        self._save("approved")
+        reapprove = self._save
+        service = self
+
+        class ReapprovingSearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def index_document(self, document: dict, text: str) -> int:
+                reapprove("approved", reviewed_at="2026-06-30T12:00:00+00:00")
+                return 4
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                service.removed = (name, known_chunk_count)
+                return known_chunk_count
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", ReapprovingSearch),
+        ):
+            result = main._index_single_document("guide.pdf")
+
+        self.assertEqual(result["status"], "withdrawn")
+        self.assertEqual(self.removed, ("guide.pdf", 4))
+
+    def test_an_unchanged_approval_commits_normally(self) -> None:
+        self._save("approved")
+
+        class StableSearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def index_document(self, document: dict, text: str) -> int:
+                return 3
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                raise AssertionError("A stable approval must not be withdrawn")
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", StableSearch),
+        ):
+            result = main._index_single_document("guide.pdf")
+
+        self.assertEqual(result["status"], "indexed")
+        self.assertEqual(result["chunks"], 3)
+        stored = json.loads(self.data_path.read_text(encoding="utf-8"))[0]
+        self.assertEqual(stored["searchIndex"]["status"], "indexed")

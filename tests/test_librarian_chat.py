@@ -1,10 +1,14 @@
+import os
+import unittest
+from unittest import mock
+
 from fastapi.testclient import TestClient
 
 from backend.app import librarian_chat
 from backend.app.services import librarian_tools
 
 
-client = TestClient(librarian_chat.app)
+client = TestClient(librarian_chat.app, client=("127.0.0.1", 50000))
 _REAL_SEARCH = librarian_tools.search_approved_knowledge
 
 
@@ -510,3 +514,45 @@ def test_maintenance_instructions_do_not_trigger_knowledge_retrieval(monkeypatch
 
     assert response.status_code == 200
     assert "approved_knowledge" not in provider.received_messages[-1]["content"]
+
+
+class LoopbackGuardTests(unittest.TestCase):
+    """The chat has no caller authentication, so it must not answer remote callers."""
+
+    def setUp(self) -> None:
+        self.remote = TestClient(librarian_chat.app, client=("10.0.0.5", 50000))
+
+    def test_remote_caller_is_refused_by_default(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            response = self.remote.get("/api/health")
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("unauthenticated", response.json()["detail"])
+
+    def test_remote_caller_cannot_read_the_library_or_impersonate_a_reviewer(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            messages = self.remote.post(
+                "/api/chat/messages", json={"sessionId": "x", "message": "What is the policy?"}
+            )
+            approval = self.remote.post(
+                "/api/chat/proposals/any/approve", json={"sessionId": "x", "reviewer": "Someone Else"}
+            )
+
+        self.assertEqual(messages.status_code, 403)
+        self.assertEqual(approval.status_code, 403)
+
+    def test_loopback_caller_is_allowed(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            response = client.get("/api/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["loopbackOnly"])
+
+    def test_operator_can_explicitly_accept_the_risk(self) -> None:
+        with mock.patch.dict(
+            os.environ, {librarian_chat.LOOPBACK_ONLY_OPT_OUT: "true"}, clear=True
+        ):
+            response = self.remote.get("/api/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["loopbackOnly"])

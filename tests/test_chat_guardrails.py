@@ -77,3 +77,12 @@ def test_executed_summary_is_left_intact() -> None:
     screened = screen_answer("I have updated the metadata in SharePoint.", executed=True)
 
     assert "Guardrail note" not in screened
+
+
+def test_redaction_is_case_insensitive_for_the_authorization_scheme() -> None:
+    """The HTTP authorization scheme is case-insensitive, so redaction must be too."""
+    token = "abcdefghijklmnopqrstuvwx"
+
+    for scheme in ("Bearer", "bearer", "BEARER", "BeArEr"):
+        redacted = redact_secrets(f"Authorization: {scheme} {token}")
+        assert token not in redacted, f"{scheme} token was not redacted"

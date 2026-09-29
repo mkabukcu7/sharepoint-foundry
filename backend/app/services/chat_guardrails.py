@@ -51,7 +51,9 @@ _LEAK_MARKERS = (
 )
 
 _SECRET_VALUE_PATTERNS = (
-    re.compile(r"Bearer\s+[A-Za-z0-9\-\._~\+/]{16,}=*"),
+    # The HTTP authorization scheme is case-insensitive, so "bearer <token>"
+    # must redact exactly like "Bearer <token>".
+    re.compile(r"(?i)Bearer\s+[A-Za-z0-9\-\._~\+/]{16,}=*"),
     re.compile(r"\beyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}"),
     re.compile(
         r"(?i)\b(password|pwd|secret|api[_\-\s]?key|client[_\-\s]?secret|access[_\-\s]?token)\b\s*[:=]\s*\S+"

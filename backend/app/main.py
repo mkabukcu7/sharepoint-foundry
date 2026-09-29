@@ -331,11 +331,7 @@ def _index_single_document(document_name: str) -> dict:
         _record_index_status(document_name, status)
         return status
 
-    documents = load_documents(DATA_PATH)
-    document = next(
-        (item for item in documents if item.get("documentName") == document_name),
-        None,
-    )
+    document = _current_document(document_name)
     if document is None:
         return {"status": "skipped", "reason": "Document not found"}
 
@@ -343,6 +339,7 @@ def _index_single_document(document_name: str) -> dict:
     text = extract_text(path) if path.is_file() else ""
     if not is_search_eligible(document):
         return {"status": "blocked", "reason": "Document is not human-approved and published."}
+    token = _approval_token(document)
     try:
         chunks = search.index_document(document, text)
     except (SearchOperationError, SearchConfigurationError, HttpResponseError, ServiceRequestError) as error:
@@ -350,6 +347,79 @@ def _index_single_document(document_name: str) -> dict:
         _record_index_status(document_name, status)
         return status
     status = {"status": "indexed", "index": search.settings.index_name, "chunks": chunks}
+    if not _commit_index_result(document_name, token, status):
+        return _discard_stale_index_write(search, document_name, chunks)
+    return status
+
+
+def _approval_token(document: dict) -> str:
+    """Identify the exact approval state a set of indexed chunks represents.
+
+    Indexing embeds and uploads, which is slow. If a reviewer revokes approval
+    while that is in flight, the withdrawal can complete first and the in-flight
+    upload would then restore citable chunks for a document that is no longer
+    approved. Comparing this token before committing detects that.
+    """
+    review = document.get("metadataReview")
+    review = review if isinstance(review, dict) else {}
+    writeback = document.get("sharePointWriteback")
+    writeback = writeback if isinstance(writeback, dict) else {}
+    return "|".join(
+        str(part)
+        for part in (
+            review.get("status"),
+            review.get("reviewedBy"),
+            review.get("reviewedAt"),
+            writeback.get("status"),
+        )
+    )
+
+
+def _commit_index_result(document_name: str, token: str, status: dict) -> bool:
+    """Record an indexing result only if approval has not changed meanwhile.
+
+    Returns False when the snapshot that was indexed is stale, in which case the
+    chunks just written describe a document that is no longer approved and the
+    caller must withdraw them.
+    """
+    with review_lock():
+        documents = load_documents(DATA_PATH)
+        document = next(
+            (item for item in documents if item.get("documentName") == document_name),
+            None,
+        )
+        if document is None:
+            return False
+        if not is_search_eligible(document) or _approval_token(document) != token:
+            return False
+        document["searchIndex"] = status
+        save_documents(documents, DATA_PATH)
+        return True
+
+
+def _discard_stale_index_write(
+    search: ApprovedKnowledgeSearch, document_name: str, chunks: int
+) -> dict:
+    """Undo an index write whose approval was revoked while it was in flight."""
+    try:
+        removed = search.remove_document(document_name, known_chunk_count=chunks)
+    except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+        status = {
+            "status": "withdrawal-failed",
+            "error": str(error),
+            "reason": (
+                "Approval changed while this document was being indexed, and the "
+                "chunks written for the superseded approval could not be removed."
+            ),
+            "chunks": chunks,
+        }
+        _record_index_status(document_name, status)
+        return status
+    status = {
+        "status": "withdrawn",
+        "reason": "Approval changed while this document was being indexed, so the write was discarded.",
+        "removedChunks": removed,
+    }
     _record_index_status(document_name, status)
     return status
 
@@ -500,17 +570,27 @@ def index_approved_documents() -> dict:
             })
             blocked += 1
             continue
+        token = _approval_token(document)
         try:
             chunks = search.index_document(document, text)
         except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
             _record_index_status(name, {"status": "failed", "error": str(error)})
             failed += 1
             continue
-        _record_index_status(name, {
+        status = {
             "status": "indexed",
             "index": search.settings.index_name,
             "chunks": chunks,
-        })
+        }
+        if not _commit_index_result(name, token, status):
+            # A reviewer revoked approval while this document was being indexed.
+            outcome = _discard_stale_index_write(search, name, chunks)
+            removed += int(outcome.get("removedChunks") or 0)
+            if outcome["status"] == "withdrawal-failed":
+                failed += 1
+            else:
+                blocked += 1
+            continue
         indexed += 1
     return {
         "status": "ok" if failed == 0 else "partial",

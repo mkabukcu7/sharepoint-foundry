@@ -147,8 +147,24 @@ metadata app:
 ```
 
 Open `http://127.0.0.1:8010`. The service uses the librarian agent configured
-above and keeps conversation turns in process memory for up to 30 minutes. Keep
-the server bound to loopback, not `0.0.0.0`.
+above and keeps conversation turns in process memory for up to 30 minutes.
+
+#### The chat has no caller authentication
+
+The service reads the approved library with the application identity and trusts
+the reviewer name a caller supplies. Anyone who can reach it can therefore read
+every approved document regardless of their own SharePoint rights, and can record
+an approval under another person's name. Delegated on-behalf-of authentication
+with permission trimming is the fix; it is not implemented yet.
+
+Until it is, the service refuses any request that does not come from loopback and
+reports `"callerAuthentication": "none"` on `/api/health`. Do not remove that
+guard to make a demo reachable. If you genuinely need a remote caller in an
+isolated environment, accept the risk explicitly:
+
+```powershell
+$env:LIBRARIAN_CHAT_ALLOW_REMOTE_UNAUTHENTICATED = "true"
+```
 
 #### Read capabilities
 
@@ -192,7 +208,9 @@ az search service update --name <search-service> --resource-group <rg> --semanti
 
 If a hit arrives without a reranker score, relevance is unknown rather than
 acceptable, so the librarian treats it as no evidence instead of answering from
-something nobody has judged. If search is not configured or fails, the chat still
+something nobody has judged. A score of `0.0` is a real score, not a missing one,
+and is treated as weak evidence -- the librarian abstains quietly rather than
+reporting a search outage. If search is not configured or fails, the chat still
 responds, reports that approved-content search is unavailable, and declines to
 answer the question from other sources.
 
@@ -303,6 +321,10 @@ Index membership is maintained in both directions:
 - Re-indexing a new version **replaces** the previous one. Chunk ids are keyed on
   document and position rather than version, so versions overwrite in place
   instead of accumulating.
+- Revoking approval **while indexing is in flight** wins. Indexing embeds before
+  it uploads, so a revocation can complete in between; the upload would otherwise
+  restore citable chunks afterwards. Indexing captures an approval token first
+  and discards its own write if approval changed meanwhile.
 
 Deletions are computed from known chunk counts rather than discovered by
 querying, because Azure AI Search indexes asynchronously and a just-written

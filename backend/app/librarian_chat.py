@@ -7,7 +7,7 @@ from threading import Lock
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from azure.core.exceptions import AzureError
 from openai import APITimeoutError, BadRequestError, OpenAIError
@@ -40,6 +40,47 @@ RATE_LIMIT_MESSAGES = 20
 RATE_LIMIT_WINDOW_SECONDS = 5 * 60
 
 app = FastAPI(title="Local Knowledge Librarian Chat")
+
+LOOPBACK_ONLY_OPT_OUT = "LIBRARIAN_CHAT_ALLOW_REMOTE_UNAUTHENTICATED"
+_LOOPBACK_HOSTS = {"127.0.0.1", "::1", "::ffff:127.0.0.1", "localhost"}
+
+
+def _loopback_only_enforced() -> bool:
+    return os.getenv(LOOPBACK_ONLY_OPT_OUT, "").strip().lower() not in {"1", "true", "yes", "on"}
+
+
+def _is_loopback(client_host: str | None) -> bool:
+    if not client_host:
+        return False
+    return client_host.strip().lower() in _LOOPBACK_HOSTS
+
+
+@app.middleware("http")
+async def restrict_to_loopback(request, call_next):
+    """This service has no caller authentication.
+
+    It reads the approved library with the application identity and trusts a
+    caller-supplied reviewer name, so a remote caller could read everything and
+    impersonate any reviewer. Until on-behalf-of identity and permission
+    trimming land, refuse non-loopback callers unless an operator has explicitly
+    accepted that risk.
+    """
+    if _loopback_only_enforced() and not _is_loopback(request.client.host if request.client else None):
+        logger.warning("Rejected non-loopback request to unauthenticated librarian chat")
+        return JSONResponse(
+            status_code=403,
+            content={
+                "detail": (
+                    "The librarian chat is unauthenticated and only serves loopback callers. "
+                    "It reads approved content with the application identity and trusts the "
+                    "reviewer name it is given, so it must not be exposed on a network until "
+                    "on-behalf-of authentication is in place. Set "
+                    f"{LOOPBACK_ONLY_OPT_OUT}=true only in an isolated environment where that "
+                    "is acceptable."
+                )
+            },
+        )
+    return await call_next(request)
 
 
 class ChatMessage(BaseModel):
@@ -145,6 +186,8 @@ def health() -> dict[str, object]:
         "agent": "knowledge-librarian-agent",
         "readEnabled": bool(os.getenv("SHAREPOINT_HOSTNAME", "").strip()),
         "writeEnabled": librarian_tools.writes_enabled(),
+        "callerAuthentication": "none",
+        "loopbackOnly": _loopback_only_enforced(),
     }
 
 

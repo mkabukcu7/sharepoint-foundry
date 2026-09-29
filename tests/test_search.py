@@ -215,6 +215,20 @@ class RelevanceThresholdTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"SEARCH_USE_SEMANTIC_RANKER": "false"}, clear=True):
             self.assertFalse(search._semantic_ranking_enabled())
 
+    def test_a_zero_reranker_score_is_weak_evidence_not_a_missing_score(self) -> None:
+        """0.0 is falsy but meaningful: the passage is irrelevant, not unscored."""
+        self.assertEqual(search._reranker_score({"@search.reranker_score": 0.0}), 0.0)
+
+        matches = [{"rerankerScore": 0.0, "content": "irrelevant"}]
+
+        # Weak evidence abstains quietly; a missing score would raise instead and
+        # be reported to the user as a search outage.
+        self.assertEqual(search._relevant_only(matches, semantic_enabled=True), [])
+
+    def test_the_camel_case_score_is_only_a_fallback_for_a_missing_value(self) -> None:
+        self.assertEqual(search._reranker_score({"@search.rerankerScore": 2.4}), 2.4)
+        self.assertIsNone(search._reranker_score({}))
+
 
 class IndexLifecycleTests(unittest.TestCase):
     def setUp(self) -> None:

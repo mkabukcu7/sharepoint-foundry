@@ -165,6 +165,23 @@ def chunk_text(text: str, size: int = 1200, overlap: int = 150) -> list[str]:
 DEFAULT_MIN_RERANKER_SCORE = 1.9
 
 
+def _reranker_score(result: dict) -> float | None:
+    """Read the semantic reranker score from a search result.
+
+    The SDK returns ``@search.reranker_score`` (snake_case); an earlier
+    camelCase read silently yielded ``None`` and disabled ranking with no error,
+    so both spellings are accepted.
+
+    A genuine score of ``0.0`` is falsy but meaningful — it means the passage is
+    irrelevant, not that ranking was unavailable — so this falls back only when
+    the value is missing.
+    """
+    score = result.get("@search.reranker_score")
+    if score is None:
+        score = result.get("@search.rerankerScore")
+    return score
+
+
 def _semantic_ranking_enabled() -> bool:
     """Semantic ranking is on unless an operator explicitly turns it off.
 
@@ -369,8 +386,7 @@ class ApprovedKnowledgeSearch:
             matches = [
                 {
                     "score": result.get("@search.score"),
-                    "rerankerScore": result.get("@search.reranker_score")
-                    or result.get("@search.rerankerScore"),
+                    "rerankerScore": _reranker_score(result),
                     "content": result.get("content", ""),
                     "citation": {
                         "documentName": result.get("sourceDocument", ""),

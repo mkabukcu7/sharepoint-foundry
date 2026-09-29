@@ -200,6 +200,13 @@ judged, so retrieval raises instead and the chat degrades to its documented
 the call and during result iteration, because the SDK returns a lazy pager that
 can fail after the call appears to have succeeded.
 
+A score of `0.0` is a real score and must not be confused with a missing one. It
+is falsy, so reading the value with a truthiness fallback across the SDK's
+snake_case and camelCase spellings turns a legitimate "this passage is
+irrelevant" into "the ranker is unavailable". The two lead to different
+user-visible outcomes -- a quiet abstention versus a reported search outage -- so
+the fallback triggers only when the value is genuinely absent.
+
 Two further constraints follow from live testing:
 
 - Excerpt volume is capped (`MAX_EXCERPT_CHARS`, `MAX_EXCERPT_BUDGET`). Quoting
@@ -226,6 +233,15 @@ trusts those frozen values, so index membership must be maintained actively.
   the index together, both flagged approved.
 - **Shrinkage.** If a new version produces fewer chunks, the surplus tail is
   deleted using ids derived from the previously recorded chunk count.
+- **Concurrent revocation.** Indexing chunks and embeds before it uploads, so it
+  is slow enough for a reviewer to revoke approval mid-flight. The withdrawal
+  then completes first and the in-flight upload restores citable chunks for
+  content nobody approves. Indexing therefore captures an approval token before
+  it starts -- review status, reviewer, review timestamp and write-back status --
+  and re-checks it under the review lock before committing. A write whose token
+  no longer matches is discarded and its chunks removed. Re-approval invalidates
+  the token too: a second approval is a different snapshot even though both read
+  `approved`.
 
 Deletion never depends on querying for what to remove. Azure AI Search indexes
 asynchronously, so a document written moments earlier is not yet returned by
@@ -448,7 +464,9 @@ flowchart LR
     F -.->|no direct access| G
 ```
 
-The boundary that carries the most risk is not a network hop. It is the identity boundary at the application: the librarian chat reads with the application identity, so any caller who reaches port `8010` can see the entire library regardless of that person's own SharePoint rights. Private networking would not change this. Delegated, on-behalf-of authorization is the control that does, and it is specified in section 2.
+The boundary that carries the most risk is not a network hop. It is the identity boundary at the application: the librarian chat reads with the application identity, so any caller who reaches port `8010` can see the entire library regardless of that person's own SharePoint rights, and it trusts the reviewer name a caller supplies, so a caller can also record an approval under someone else's name. Private networking would not change this. Delegated, on-behalf-of authorization is the control that does, and it is specified in section 2.
+
+Until that lands, the librarian chat refuses any caller whose address is not loopback and reports `callerAuthentication: none` on its health endpoint. This is a containment measure, not a fix: it keeps an unauthenticated service from being reachable by accident, but it grants no per-user authorization. An operator can accept the risk deliberately in an isolated environment by setting `LIBRARIAN_CHAT_ALLOW_REMOTE_UNAUTHENTICATED=true`, which is intentionally explicit rather than a host binding that is easy to change without noticing.
 
 ### What can and cannot be privatized
 
