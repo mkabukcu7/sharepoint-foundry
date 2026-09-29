@@ -27,22 +27,45 @@ knowledge-agent-mvp/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py
+│   │   ├── librarian_chat.py
 │   │   ├── models/
 │   │   └── services/
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
 │   └── scripts/
 ├── frontend/
 │   └── static-demo.html
+├── infra/
+│   ├── main.bicep
+│   └── modules/
+├── prompts/
 ├── sample-documents/
+├── tests/
 ├── data/
 │   └── demo-metadata.json
+├── conftest.py
 └── docs/
-	└── architecture.md
+	├── architecture.md
+	└── demo-setup.md
 ```
+
+- [docs/architecture.md](docs/architecture.md) — design, the
+  [as-built flow diagram and Azure resource list](docs/architecture.md#as-built-deployment-and-azure-resources),
+  and the target architecture.
+- [docs/demo-setup.md](docs/demo-setup.md) — provisioning, permissions, and the
+  demo run order.
 
 ## Quick start
 
 The bundled dashboard requires only Python 3.12 or later.
+
+> **Setting this up for the first time, or taking the project over?** Read
+> [docs/demo-setup.md](docs/demo-setup.md). It covers the Azure resources,
+> RBAC roles, Graph permissions, and the full demo run order. The quick start
+> below is the offline path and needs no Azure access.
+>
+> For how the pieces fit together, see the as-built flow diagram and resource
+> list in [docs/architecture.md](docs/architecture.md#as-built-deployment-and-azure-resources).
 
 From the repository root:
 
@@ -91,9 +114,28 @@ The repository also includes visible VS Code tasks:
 - `Demo: Check live Foundry` performs one controlled-taxonomy classification call.
 - `Demo: Run offline fallback` starts deterministic mock mode only when live Foundry is unavailable.
 
+## Running the tests
+
+The test suite needs two dependencies beyond the runtime requirements, so install
+the development set first:
+
+```powershell
+python -m pip install -r backend\requirements-dev.txt
+python -m pytest
+```
+
+A clean checkout on a supported Python should report every test passing, with no
+Azure access, no `.env` file, and no customer data required. Anything else is a
+real failure worth investigating.
+
+Use `pytest` rather than `unittest discover`. Several test modules are written in
+pytest style, and `unittest` silently collects only part of the suite.
+
 ## Customer taxonomy data
 
 Place the customer-provided taxonomy source at `taxonomy\WTW_Intranet_Taxonomy_Reference.docx` locally before running `python -m backend.scripts.build_taxonomy`. The entire `taxonomy\` directory is ignored by Git; neither the source document nor generated controlled terms should be committed or uploaded to the repository.
+
+The tests do not use that file. They pin `FOUNDRY_TAXONOMY_PATH` to the synthetic fixture `tests\fixtures\test-taxonomy.json` from `conftest.py`, so the suite runs identically with or without customer data present.
 
 ## Microsoft Foundry
 
@@ -441,12 +483,13 @@ Use `SHAREPOINT_CREDENTIAL_MODE=default` for the connector's service principal o
 
 ## Demo rehearsal
 
-Run these commands before presenting:
+Run these commands before presenting. For first-time setup and the Azure
+prerequisites behind them, see [docs/demo-setup.md](docs/demo-setup.md).
 
 ```powershell
 python -m backend.scripts.reset_demo
 python -m backend.scripts.demo_preflight
-python -m unittest discover -s tests -v
+python -m pytest
 python -m uvicorn backend.app.main:app --reload --port 8000
 ```
 

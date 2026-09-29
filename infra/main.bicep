@@ -1,13 +1,13 @@
 targetScope = 'subscription'
 
 @description('Existing resource group that will contain the Search service.')
-param resourceGroupName string = 'rg-admin-2684'
+param resourceGroupName string
 
 @description('Azure region for the Search service.')
-param location string = 'eastus2'
+param location string
 
 @description('Globally unique Azure AI Search service name.')
-param searchServiceName string = 'wtw-knowledge-search-2684'
+param searchServiceName string
 
 @description('Search service SKU for the pilot.')
 @allowed([
@@ -16,8 +16,9 @@ param searchServiceName string = 'wtw-knowledge-search-2684'
 ])
 param searchSku string = 'basic'
 
-@description('Optional Entra service principal object ID for the application that will index and query approved content.')
-param applicationPrincipalId string = ''
+@description('Entra service principal object ID for the application that will index and query approved content.')
+@minLength(1)
+param applicationPrincipalId string
 
 @description('Semantic ranker tier. The librarian judges whether it has evidence from the reranker score, so this cannot be disabled without losing abstention.')
 @allowed([
