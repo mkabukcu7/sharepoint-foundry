@@ -8,7 +8,9 @@ from azure.core.exceptions import HttpResponseError, ServiceRequestError
 from backend.app.services import search
 from backend.app.services.search import (
     ApprovedKnowledgeSearch,
+    SearchOperationError,
     SearchSettings,
+    _chunk_id,
     build_search_index,
     chunk_text,
     is_search_eligible,
@@ -47,15 +49,35 @@ class FakeSearchClient:
         # The real service returns this whenever semantic ranking is on, and the
         # librarian judges evidence by it.
         self.reranker_score = reranker_score
+        # The real service reports per-key batch failures in the returned results
+        # rather than by raising, so the fake has to be able to do the same.
+        self.fail_delete_keys: set[str] = set()
+        self.fail_upload_keys: set[str] = set()
 
-    def upload_documents(self, documents: list[dict]) -> None:
+    def _results(self, ids: list[str], failing: set[str]) -> list[SimpleNamespace]:
+        return [
+            SimpleNamespace(
+                key=chunk_id,
+                succeeded=chunk_id not in failing,
+                status_code=200 if chunk_id not in failing else 503,
+                error_message=None if chunk_id not in failing else "service overloaded",
+            )
+            for chunk_id in ids
+        ]
+
+    def upload_documents(self, documents: list[dict]) -> list[SimpleNamespace]:
         for document in documents:
+            if document["id"] in self.fail_upload_keys:
+                continue
             self.documents = [item for item in self.documents if item["id"] != document["id"]]
             self.documents.append(document)
+        return self._results([d["id"] for d in documents], self.fail_upload_keys)
 
-    def delete_documents(self, documents: list[dict]) -> None:
-        removed = {document["id"] for document in documents}
+    def delete_documents(self, documents: list[dict]) -> list[SimpleNamespace]:
+        ids = [document["id"] for document in documents]
+        removed = {chunk_id for chunk_id in ids if chunk_id not in self.fail_delete_keys}
         self.documents = [item for item in self.documents if item["id"] not in removed]
+        return self._results(ids, self.fail_delete_keys)
 
     def search(self, **options: object) -> list[dict]:
         self.options = options
@@ -364,4 +386,80 @@ class IndexLifecycleTests(unittest.TestCase):
         self.search.index_document(document, "Quoted name content.")
 
         self.assertEqual(self.search.remove_document("reviewer's notes.docx"), 1)
+        self.assertEqual(self.search_client.documents, [])
+
+
+class PartialBatchFailureTests(unittest.TestCase):
+    """Azure Search reports per-key batch failures in the results, not by raising."""
+
+    def setUp(self) -> None:
+        self.settings = SearchSettings(
+            endpoint="https://search.example.net",
+            index_name="approved",
+            embedding_model="embedding-model",
+            vector_dimensions=3,
+        )
+        self.search_client = FakeSearchClient()
+        self.search = ApprovedKnowledgeSearch(
+            settings=self.settings,
+            credential=object(),
+            embedding_client=FakeOpenAI(),
+            index_client=FakeIndexClient(),
+            search_client=self.search_client,
+        )
+
+    def _document(self) -> dict:
+        return {
+            "documentName": "policy.docx",
+            "metadataReview": {"status": "approved"},
+            "sharePoint": {"version": "2.0", "webUrl": "https://example/policy.docx"},
+        }
+
+    def test_a_failed_chunk_deletion_is_not_reported_as_a_successful_withdrawal(self) -> None:
+        """Counting a failed delete as removed leaves un-approved content citable."""
+        self.search.index_document(self._document(), "Guidance. " * 400)
+        indexed = len(self.search_client.documents)
+        self.assertGreater(indexed, 0)
+
+        surviving = self.search_client.documents[0]["id"]
+        self.search_client.fail_delete_keys = {surviving}
+
+        with self.assertRaises(SearchOperationError) as caught:
+            self.search.remove_document("policy.docx", known_chunk_count=indexed)
+
+        self.assertIn("policy.docx", str(caught.exception))
+        # The chunk really is still there, which is exactly why this must raise.
+        self.assertTrue(any(item["id"] == surviving for item in self.search_client.documents))
+
+    def test_a_partial_upload_does_not_report_a_full_index(self) -> None:
+        document = self._document()
+        chunks = chunk_text("Guidance. " * 400)
+        self.assertGreater(len(chunks), 1)
+        self.search_client.fail_upload_keys = {_chunk_id("policy.docx", 1)}
+
+        with self.assertRaises(SearchOperationError):
+            self.search.index_document(document, "Guidance. " * 400)
+
+    def test_a_partial_upload_leaves_no_half_written_document_behind(self) -> None:
+        """Ids are position-keyed, so a partial upload mixes two versions."""
+        self.search.index_document(self._document(), "Old guidance. " * 400)
+        self.assertGreater(len(self.search_client.documents), 0)
+
+        second = self._document()
+        second["sharePoint"]["version"] = "3.0"
+        second["searchIndex"] = {"chunks": len(self.search_client.documents)}
+        self.search_client.fail_upload_keys = {_chunk_id("policy.docx", 1)}
+
+        with self.assertRaises(SearchOperationError):
+            self.search.index_document(second, "New guidance. " * 400)
+
+        self.assertEqual(self.search_client.documents, [])
+
+    def test_a_clean_batch_is_still_counted_as_removed(self) -> None:
+        self.search.index_document(self._document(), "Guidance. " * 400)
+        indexed = len(self.search_client.documents)
+
+        removed = self.search.remove_document("policy.docx", known_chunk_count=indexed)
+
+        self.assertEqual(removed, indexed)
         self.assertEqual(self.search_client.documents, [])

@@ -1,5 +1,7 @@
 import json
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -230,11 +232,6 @@ def metadata_review_of(data_path: Path) -> dict:
 
     document = load_documents(data_path)[0]
     return metadata_review(document, "")
-
-
-if __name__ == "__main__":
-    unittest.main()
-
 
 
 class ReviewerAttributionTests(unittest.TestCase):
@@ -534,3 +531,131 @@ class ConcurrentRevocationDuringIndexingTests(unittest.TestCase):
         self.assertEqual(result["chunks"], 3)
         stored = json.loads(self.data_path.read_text(encoding="utf-8"))[0]
         self.assertEqual(stored["searchIndex"]["status"], "indexed")
+
+
+class SerializedIndexLifecycleTests(unittest.TestCase):
+    """Chunk ids are shared across approvals, so index and withdraw must not overlap.
+
+    If they interleave for one document, a withdrawal can delete chunks a
+    concurrent re-approval has just uploaded, leaving an approved document
+    silently uncitable.
+    """
+
+    def setUp(self) -> None:
+        self._directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self._directory.cleanup)
+        root = Path(self._directory.name)
+        self.data_path = root / "metadata.json"
+        self.source_dir = root / "documents"
+        self.source_dir.mkdir()
+        self.events: list[tuple[str, str]] = []
+        self.events_lock = threading.Lock()
+        main._index_lifecycle_locks.clear()
+
+    def _save(self, status: str, index_status: str | None = None) -> None:
+        document = _document()
+        document["metadataReview"] = {
+            "status": status,
+            "reviewedBy": "Ada Reviewer",
+            "reviewedAt": "2026-01-01T00:00:00+00:00",
+        }
+        if index_status:
+            document["searchIndex"] = {"status": index_status, "chunks": 3}
+        save_documents([document], self.data_path)
+
+    def _record(self, operation: str, phase: str) -> None:
+        with self.events_lock:
+            self.events.append((operation, phase))
+
+    def _slow_search(self, revoke_midway: bool = False):
+        recorder = self
+
+        class SlowSearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def index_document(self, document: dict, text: str) -> int:
+                recorder._record("index", "start")
+                time.sleep(0.05)
+                if revoke_midway:
+                    # The reviewer revokes while the upload is in flight, which is
+                    # what gives a concurrent withdrawal something to delete.
+                    recorder._save("needs-review", index_status="indexed")
+                time.sleep(0.2)
+                recorder._record("index", "end")
+                return 3
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                recorder._record("remove", "start")
+                time.sleep(0.2)
+                recorder._record("remove", "end")
+                return known_chunk_count
+
+        return SlowSearch
+
+    def test_a_withdrawal_cannot_run_while_the_same_document_is_being_indexed(self) -> None:
+        self._save("approved", index_status="indexed")
+        stale_snapshot = json.loads(self.data_path.read_text(encoding="utf-8"))[0]
+        stale_snapshot["metadataReview"]["status"] = "needs-review"
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch(
+                "backend.app.main.ApprovedKnowledgeSearch",
+                self._slow_search(revoke_midway=True),
+            ),
+        ):
+            indexer = threading.Thread(target=main._index_single_document, args=("guide.pdf",))
+            indexer.start()
+            time.sleep(0.1)
+            withdrawer = threading.Thread(
+                target=main._withdraw_from_index, args=(stale_snapshot,)
+            )
+            withdrawer.start()
+            indexer.join(timeout=10)
+            withdrawer.join(timeout=10)
+
+        self.assertIn(("index", "start"), self.events)
+        # Every operation that started must have finished before the next began.
+        for first, second in zip(self.events, self.events[1:]):
+            if first[1] == "start":
+                self.assertEqual(
+                    (first[0], "end"),
+                    second,
+                    f"Operations interleaved: {self.events}",
+                )
+
+    def test_a_stale_revocation_does_not_delete_a_newer_approvals_chunks(self) -> None:
+        """The snapshot that decided to withdraw was taken before the lock was released."""
+        self._save("approved", index_status="indexed")
+        stale_snapshot = json.loads(self.data_path.read_text(encoding="utf-8"))[0]
+        stale_snapshot["metadataReview"]["status"] = "needs-review"
+
+        class ForbiddenSearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                raise AssertionError(
+                    "Withdrew chunks belonging to an approval that is currently valid"
+                )
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", ForbiddenSearch),
+        ):
+            result = main._withdraw_from_index(stale_snapshot)
+
+        self.assertIsNone(result)
+        stored = json.loads(self.data_path.read_text(encoding="utf-8"))[0]
+        self.assertEqual(stored["searchIndex"]["status"], "indexed")
+
+
+if __name__ == "__main__":
+    unittest.main()

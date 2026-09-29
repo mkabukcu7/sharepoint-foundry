@@ -325,6 +325,16 @@ Index membership is maintained in both directions:
   it uploads, so a revocation can complete in between; the upload would otherwise
   restore citable chunks afterwards. Indexing captures an approval token first
   and discards its own write if approval changed meanwhile.
+- Index writes and withdrawals for **the same document are serialized**. Chunk
+  ids are shared across approvals, so overlapping operations act on the same
+  keys and a withdrawal could delete chunks a concurrent re-approval had just
+  uploaded. Each document has its own lifecycle lock, held across the Search
+  calls, so unrelated reviews still run in parallel.
+- A **partially failed batch** is never reported as success. Azure AI Search
+  returns per-key failures in its results rather than raising, so a revocation
+  could otherwise be recorded as complete while chunks remained citable. A
+  partial upload is rolled back, because position-keyed ids mean it has already
+  overwritten part of the previous version.
 
 Deletions are computed from known chunk counts rather than discovered by
 querying, because Azure AI Search indexes asynchronously and a just-written

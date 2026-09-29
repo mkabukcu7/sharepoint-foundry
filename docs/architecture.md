@@ -242,6 +242,34 @@ trusts those frozen values, so index membership must be maintained actively.
   no longer matches is discarded and its chunks removed. Re-approval invalidates
   the token too: a second approval is a different snapshot even though both read
   `approved`.
+- **Serialization.** The token guards the *status*, but not the Search calls
+  themselves, and chunk ids are shared across approvals. Two lifecycle
+  operations on one document therefore act on the same keys: a withdrawal can
+  delete chunks a concurrent re-approval has just uploaded, and a discarded
+  stale write can delete a newer approval's chunks. Every index, withdrawal and
+  discard for a document runs under a per-document lifecycle lock held across
+  the slow Search calls. The review lock cannot do this because it is released
+  precisely while embedding and uploading. The lock is per document so unrelated
+  reviews still proceed in parallel, and it is always acquired before the review
+  lock, never after, so the two cannot deadlock.
+- **Stale withdrawal decisions.** A withdrawal is requested from a snapshot taken
+  before the review lock was released, so a re-approval may have landed since.
+  Withdrawal re-reads current state inside the lifecycle lock and does nothing if
+  the document is approved again, rather than deleting the new approval's chunks.
+
+### Partial batch failures
+
+Azure AI Search reports per-key failures inside the results of a batch call
+rather than by raising. Counting every requested id as removed therefore recorded
+a revocation as complete while the chunks were still in the index and still
+citable, which is the exact failure the withdrawal path exists to prevent. Both
+deletion and upload inspect each result and raise on any failure.
+
+An upload is rolled back when it partially fails. Ids are position-keyed, so a
+partial upload has already overwritten part of the previous version: the index
+holds a mix of two versions, and no chunk count is recorded that a later
+withdrawal could use. Removing what was written returns the index to a
+consistent state and leaves the document to be re-indexed on retry.
 
 Deletion never depends on querying for what to remove. Azure AI Search indexes
 asynchronously, so a document written moments earlier is not yet returned by

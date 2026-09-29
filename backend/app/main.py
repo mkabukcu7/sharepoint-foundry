@@ -3,7 +3,9 @@ import logging
 import os
 import shutil
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
+from threading import Lock, RLock
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -310,12 +312,41 @@ def approve_document_metadata(document_name: str, approval: MetadataApproval) ->
     return result
 
 
+_index_lifecycle_locks: dict[str, RLock] = {}
+_index_lifecycle_registry = Lock()
+
+
+@contextmanager
+def _document_index_lock(document_name: str):
+    """Serialize every index-lifecycle operation for one document.
+
+    Chunk ids are shared across approvals, so an index write and a withdrawal
+    that overlap act on the same keys. Without this, a withdrawal can delete
+    chunks a concurrent re-approval had just uploaded, and a discarded stale
+    write can delete a newer approval's chunks and overwrite its status.
+
+    The review lock cannot do this job: it is released while embedding and
+    uploading, which is exactly the slow part. This lock is per document so
+    unrelated reviews still run in parallel, and it is always taken before the
+    review lock, never after, so the two cannot deadlock.
+    """
+    with _index_lifecycle_registry:
+        lock = _index_lifecycle_locks.setdefault(document_name, RLock())
+    with lock:
+        yield
+
+
 def _index_single_document(document_name: str) -> dict:
     """Index the document that was just approved, so it becomes answerable at once.
 
     Indexing failures must not undo an approval that already succeeded, so this
     reports the outcome rather than raising.
     """
+    with _document_index_lock(document_name):
+        return _index_single_document_locked(document_name)
+
+
+def _index_single_document_locked(document_name: str) -> dict:
     try:
         search = ApprovedKnowledgeSearch()
         search.ensure_index()
@@ -460,6 +491,20 @@ def _withdraw_from_index(document: dict) -> dict | None:
     for the next full reindex would leave un-approved content citable.
     """
     document_name = document.get("documentName", "")
+    if not document_name:
+        return None
+    with _document_index_lock(document_name):
+        # The caller's snapshot was taken before the review lock was released, so
+        # a re-approval may have landed since. Decide from current state, under
+        # the lock that also excludes a concurrent index write.
+        current = _current_document(document_name)
+        if current is None:
+            return None
+        return _withdraw_from_index_locked(current)
+
+
+def _withdraw_from_index_locked(document: dict) -> dict | None:
+    document_name = document.get("documentName", "")
     previous = document.get("searchIndex")
     previous = previous if isinstance(previous, dict) else {}
     if not document_name or previous.get("status") != "indexed":
@@ -522,6 +567,50 @@ def ingest() -> dict:
     return {"status": "ok", "documents": len(docs)}
 
 
+_NO_CHANGE = {"indexed": 0, "blocked": 0, "failed": 0, "removed": 0}
+
+
+def _reindex_one_locked(search: ApprovedKnowledgeSearch, name: str) -> dict:
+    """Bring one document's index state into line with its current approval."""
+    document = _current_document(name)
+    if document is None:
+        return dict(_NO_CHANGE)
+    path = SAMPLE_DOCS / name
+    text = extract_text(path) if path.is_file() else ""
+    document["metadataReview"] = metadata_review(document, text)
+    if not is_search_eligible(document):
+        # Approval status is frozen into each chunk at index time, so a
+        # document that loses approval must be withdrawn from the index too.
+        try:
+            previous = document.get("searchIndex")
+            previous_count = previous.get("chunks", 0) if isinstance(previous, dict) else 0
+            withdrawn = search.remove_document(name, known_chunk_count=int(previous_count or 0))
+        except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+            _record_index_status(name, {"status": "failed", "error": str(error)})
+            return {**_NO_CHANGE, "failed": 1}
+        _record_index_status(name, {
+            "status": "blocked",
+            "reason": "Document is not human-approved and published.",
+            "removedChunks": withdrawn,
+        })
+        return {**_NO_CHANGE, "blocked": 1, "removed": withdrawn}
+    token = _approval_token(document)
+    try:
+        chunks = search.index_document(document, text)
+    except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
+        _record_index_status(name, {"status": "failed", "error": str(error)})
+        return {**_NO_CHANGE, "failed": 1}
+    status = {"status": "indexed", "index": search.settings.index_name, "chunks": chunks}
+    if not _commit_index_result(name, token, status):
+        # A reviewer revoked approval while this document was being indexed.
+        outcome = _discard_stale_index_write(search, name, chunks)
+        removed = int(outcome.get("removedChunks") or 0)
+        if outcome["status"] == "withdrawal-failed":
+            return {**_NO_CHANGE, "failed": 1, "removed": removed}
+        return {**_NO_CHANGE, "blocked": 1, "removed": removed}
+    return {**_NO_CHANGE, "indexed": 1}
+
+
 @app.post("/api/search/index")
 def index_approved_documents() -> dict:
     try:
@@ -545,53 +634,15 @@ def index_approved_documents() -> dict:
     # before use and only its own searchIndex entry is written back. Saving the
     # snapshot this loop started from would discard approvals made while it ran.
     for name in names:
-        document = _current_document(name)
-        if document is None:
-            continue
-        path = SAMPLE_DOCS / name
-        text = extract_text(path) if path.is_file() else ""
-        document["metadataReview"] = metadata_review(document, text)
-        if not is_search_eligible(document):
-            # Approval status is frozen into each chunk at index time, so a
-            # document that loses approval must be withdrawn from the index too.
-            try:
-                previous = document.get("searchIndex")
-                previous_count = previous.get("chunks", 0) if isinstance(previous, dict) else 0
-                withdrawn = search.remove_document(name, known_chunk_count=int(previous_count or 0))
-            except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
-                _record_index_status(name, {"status": "failed", "error": str(error)})
-                failed += 1
-                continue
-            removed += withdrawn
-            _record_index_status(name, {
-                "status": "blocked",
-                "reason": "Document is not human-approved and published.",
-                "removedChunks": withdrawn,
-            })
-            blocked += 1
-            continue
-        token = _approval_token(document)
-        try:
-            chunks = search.index_document(document, text)
-        except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
-            _record_index_status(name, {"status": "failed", "error": str(error)})
-            failed += 1
-            continue
-        status = {
-            "status": "indexed",
-            "index": search.settings.index_name,
-            "chunks": chunks,
-        }
-        if not _commit_index_result(name, token, status):
-            # A reviewer revoked approval while this document was being indexed.
-            outcome = _discard_stale_index_write(search, name, chunks)
-            removed += int(outcome.get("removedChunks") or 0)
-            if outcome["status"] == "withdrawal-failed":
-                failed += 1
-            else:
-                blocked += 1
-            continue
-        indexed += 1
+        # Each document's index lifecycle is serialized, so a concurrent
+        # approval or revocation of the same document cannot interleave with
+        # this write and leave the wrong chunks behind.
+        with _document_index_lock(name):
+            outcome = _reindex_one_locked(search, name)
+        indexed += outcome["indexed"]
+        blocked += outcome["blocked"]
+        failed += outcome["failed"]
+        removed += outcome["removed"]
     return {
         "status": "ok" if failed == 0 else "partial",
         "indexed": indexed,

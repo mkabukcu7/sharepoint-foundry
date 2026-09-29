@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import Any
@@ -301,9 +302,20 @@ class ApprovedKnowledgeSearch:
         if not ids:
             return 0
         try:
-            self.search_client.delete_documents(documents=[{"id": chunk_id} for chunk_id in ids])
+            results = self.search_client.delete_documents(
+                documents=[{"id": chunk_id} for chunk_id in ids]
+            )
         except (HttpResponseError, ServiceRequestError) as error:
             raise SearchOperationError(f"Could not remove {document_name} from the index: {error}") from error
+        failures = _failed_keys(results)
+        if failures:
+            # A batch can report per-key failures without raising. Counting those
+            # as removed would record a revocation as complete while the chunks
+            # are still citable.
+            raise SearchOperationError(
+                f"Could not remove {len(failures)} of {len(ids)} chunks for "
+                f"{document_name}: {_describe_failures(failures)}"
+            )
         return len(ids)
 
     def index_document(self, document: dict, text: str) -> int:
@@ -348,7 +360,18 @@ class ApprovedKnowledgeSearch:
             }
             for number, (chunk, vector) in enumerate(zip(chunks, vectors))
         ]
-        self.search_client.upload_documents(documents=records)
+        results = self.search_client.upload_documents(documents=records)
+        failures = _failed_keys(results)
+        if failures:
+            # Ids are position-keyed, so a partial upload has already overwritten
+            # part of any previous version: the index now holds a mix of two
+            # versions. Remove what was written rather than leave inconsistent
+            # guidance citable, then report the failure so it can be retried.
+            rollback = self._rollback_partial_upload(document["documentName"], len(records))
+            raise SearchOperationError(
+                f"Could not index {len(failures)} of {len(records)} chunks for "
+                f"{document['documentName']}: {_describe_failures(failures)}.{rollback}"
+            )
         # Chunk ids are position-keyed, so the upload above overwrites the previous
         # version in place. Only a shrunken document leaves a tail behind, and its
         # ids are computed rather than queried because indexing lags writes.
@@ -360,6 +383,14 @@ class ApprovedKnowledgeSearch:
         ]
         self._delete_ids(document["documentName"], stale)
         return len(records)
+
+    def _rollback_partial_upload(self, document_name: str, count: int) -> str:
+        """Best-effort removal of a half-written document; never masks the cause."""
+        try:
+            self._delete_ids(document_name, [_chunk_id(document_name, n) for n in range(count)])
+        except SearchOperationError as error:
+            return f" The partially written chunks could not be removed either: {error}"
+        return " The partially written chunks were removed."
 
     def query(self, question: str, top: int = 5) -> list[dict]:
         vectors = self._embed([question])
@@ -469,6 +500,40 @@ def _chunk_id(document_name: str, chunk_number: int) -> str:
     """
     digest = sha256(f"{document_name}::{chunk_number}".encode("utf-8")).hexdigest()
     return digest
+
+
+def _failed_keys(results: object) -> list[tuple[str, str]]:
+    """Collect per-key failures from a batch indexing response.
+
+    Azure AI Search reports partial batch failures in the returned results
+    rather than by raising, so a batch that "succeeded" can still have left
+    chunks behind. Each entry is (key, reason).
+    """
+    if not isinstance(results, Iterable):
+        return []
+    failures: list[tuple[str, str]] = []
+    for result in results:
+        succeeded = getattr(result, "succeeded", None)
+        if succeeded is None and isinstance(result, dict):
+            succeeded = result.get("succeeded", result.get("status"))
+        if succeeded:
+            continue
+        key = getattr(result, "key", None)
+        status_code = getattr(result, "status_code", None)
+        message = getattr(result, "error_message", None)
+        if isinstance(result, dict):
+            key = key or result.get("key")
+            status_code = status_code or result.get("statusCode")
+            message = message or result.get("errorMessage")
+        failures.append((str(key or "unknown"), str(message or status_code or "unknown error")))
+    return failures
+
+
+def _describe_failures(failures: list[tuple[str, str]], limit: int = 3) -> str:
+    shown = ", ".join(f"{key} ({reason})" for key, reason in failures[:limit])
+    if len(failures) > limit:
+        shown += f", and {len(failures) - limit} more"
+    return shown
 
 
 def _facet_values(approved_taxonomy: dict, classification: dict, field: str) -> list[str]:
