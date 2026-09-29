@@ -206,6 +206,18 @@ class ClassificationFlagTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "outside the taxonomy"):
             update_field_review(self.data_path, self.source_dir, "guide.pdf", "topics", "accepted")
 
+    def test_unavailable_taxonomy_cannot_be_acknowledged(self) -> None:
+        with patch("backend.app.services.reviews._load_taxonomy", return_value=None):
+            review = metadata_review(_document(), "")
+
+        flag = next(
+            item for item in review["classificationFlags"]
+            if item["id"] == "taxonomy-unavailable"
+        )
+        self.assertFalse(flag["acknowledgeOnly"])
+        self.assertIn("cannot be validated", flag["message"])
+        self.assertIn(flag["message"], unresolved_review_items(review)["flags"])
+
     def test_unresolved_items_report_fields_and_flags_separately(self) -> None:
         save_documents([_document(reviewRequired=True)], self.data_path)
         review = metadata_review_of(self.data_path)
@@ -655,6 +667,124 @@ class SerializedIndexLifecycleTests(unittest.TestCase):
         self.assertIsNone(result)
         stored = json.loads(self.data_path.read_text(encoding="utf-8"))[0]
         self.assertEqual(stored["searchIndex"]["status"], "indexed")
+
+
+class ChunkCountSurvivesFailureTests(unittest.TestCase):
+    """A failed removal must not forget how many chunks are in the index.
+
+    Deletions are computed from the recorded chunk count. If a failure replaces
+    that count with a status that has none, the next attempt computes zero stale
+    ids and silently leaves superseded chunks citable forever.
+    """
+
+    def setUp(self) -> None:
+        self._directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self._directory.cleanup)
+        root = Path(self._directory.name)
+        self.data_path = root / "metadata.json"
+        self.source_dir = root / "documents"
+        self.source_dir.mkdir()
+        self.client = TestClient(app)
+        main._index_lifecycle_locks.clear()
+
+    def _save_approved(self, chunks: int = 3) -> None:
+        document = _document()
+        document["metadataReview"] = {
+            "status": "approved",
+            "reviewedBy": "Ada Reviewer",
+            "reviewedAt": "2026-01-01T00:00:00+00:00",
+        }
+        document["searchIndex"] = {"status": "indexed", "chunks": chunks}
+        save_documents([document], self.data_path)
+
+    def _stored(self) -> dict:
+        return json.loads(self.data_path.read_text(encoding="utf-8"))[0]
+
+    def test_a_failed_withdrawal_still_records_the_chunk_count(self) -> None:
+        self._save_approved(chunks=3)
+
+        class BrokenSearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                raise SearchOperationError("index unreachable")
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", BrokenSearch),
+        ):
+            self.client.patch(
+                "/api/documents/guide.pdf/review",
+                json={"field": "author", "decision": "edited", "value": "Grace Hopper"},
+            )
+
+        self.assertEqual(self._stored()["searchIndex"]["indexedChunks"], 3)
+
+    def test_a_retry_after_a_failed_withdrawal_deletes_the_original_chunks(self) -> None:
+        """The whole point of keeping the count: the next attempt must use it."""
+        self._save_approved(chunks=3)
+        document = self._stored()
+        document["metadataReview"]["status"] = "needs-review"
+        save_documents([document], self.data_path)
+        attempts: list[int] = []
+
+        class FlakySearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                attempts.append(known_chunk_count)
+                if len(attempts) == 1:
+                    raise SearchOperationError("index unreachable")
+                return known_chunk_count
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", FlakySearch),
+        ):
+            self.client.post("/api/search/index")
+            response = self.client.post("/api/search/index")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            attempts,
+            [3, 3],
+            "The retry must still know the document had 3 chunks in the index",
+        )
+        self.assertEqual(self._stored()["searchIndex"]["status"], "blocked")
+
+    def test_a_failed_reindex_removal_keeps_the_count_for_the_next_run(self) -> None:
+        self._save_approved(chunks=4)
+        document = self._stored()
+        document["metadataReview"]["status"] = "needs-review"
+        save_documents([document], self.data_path)
+
+        class BrokenSearch:
+            settings = SimpleNamespace(index_name="approved")
+
+            def ensure_index(self) -> None:
+                return None
+
+            def remove_document(self, name: str, known_chunk_count: int = 0) -> int:
+                raise SearchOperationError("index unreachable")
+
+        with (
+            patch("backend.app.main.DATA_PATH", self.data_path),
+            patch("backend.app.main.SAMPLE_DOCS", self.source_dir),
+            patch("backend.app.main.ApprovedKnowledgeSearch", BrokenSearch),
+        ):
+            self.client.post("/api/search/index")
+
+        status = self._stored()["searchIndex"]
+        self.assertEqual(status["status"], "failed")
+        self.assertEqual(status["indexedChunks"], 4)
 
 
 if __name__ == "__main__":

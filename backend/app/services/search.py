@@ -30,8 +30,25 @@ class SearchConfigurationError(ValueError):
     pass
 
 
+def _as_count(value: object) -> int:
+    try:
+        return max(int(value or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 class SearchOperationError(RuntimeError):
-    pass
+    """A search operation failed.
+
+    ``chunks_left_behind`` reports how many position-keyed chunk ids the failed
+    operation may have left in the index. Callers record it so a later
+    withdrawal still knows which ids to delete; without it a failure would erase
+    the only record of them and leave superseded content citable.
+    """
+
+    def __init__(self, *args: object, chunks_left_behind: int = 0) -> None:
+        super().__init__(*args)
+        self.chunks_left_behind = max(int(chunks_left_behind or 0), 0)
 
 
 @dataclass(frozen=True)
@@ -285,7 +302,12 @@ class ApprovedKnowledgeSearch:
         known = [_chunk_id(document_name, number) for number in range(max(known_chunk_count, 0))]
         removed: set[str] = set()
         if known:
-            self._delete_ids(document_name, known)
+            try:
+                self._delete_ids(document_name, known)
+            except SearchOperationError as error:
+                raise SearchOperationError(
+                    str(error), chunks_left_behind=len(known)
+                ) from error
             removed.update(known)
         try:
             extra = [chunk_id for chunk_id in self.chunk_ids_for(document_name) if chunk_id not in removed]
@@ -294,7 +316,12 @@ class ApprovedKnowledgeSearch:
                 raise
             return len(removed)
         if extra:
-            self._delete_ids(document_name, extra)
+            try:
+                self._delete_ids(document_name, extra)
+            except SearchOperationError as error:
+                raise SearchOperationError(
+                    str(error), chunks_left_behind=len(known) + len(extra)
+                ) from error
             removed.update(extra)
         return len(removed)
 
@@ -367,30 +394,51 @@ class ApprovedKnowledgeSearch:
             # part of any previous version: the index now holds a mix of two
             # versions. Remove what was written rather than leave inconsistent
             # guidance citable, then report the failure so it can be retried.
-            rollback = self._rollback_partial_upload(document["documentName"], len(records))
+            rollback, left_behind = self._rollback_partial_upload(
+                document["documentName"], len(records)
+            )
             raise SearchOperationError(
                 f"Could not index {len(failures)} of {len(records)} chunks for "
-                f"{document['documentName']}: {_describe_failures(failures)}.{rollback}"
+                f"{document['documentName']}: {_describe_failures(failures)}.{rollback}",
+                chunks_left_behind=left_behind,
             )
         # Chunk ids are position-keyed, so the upload above overwrites the previous
         # version in place. Only a shrunken document leaves a tail behind, and its
         # ids are computed rather than queried because indexing lags writes.
         previous = document.get("searchIndex")
-        previous_count = previous.get("chunks", 0) if isinstance(previous, dict) else 0
+        previous = previous if isinstance(previous, dict) else {}
+        previous_count = max(
+            _as_count(previous.get("indexedChunks")),
+            _as_count(previous.get("chunks")),
+        )
         stale = [
             _chunk_id(document["documentName"], number)
-            for number in range(len(records), max(int(previous_count or 0), 0))
+            for number in range(len(records), previous_count)
         ]
-        self._delete_ids(document["documentName"], stale)
+        try:
+            self._delete_ids(document["documentName"], stale)
+        except SearchOperationError as error:
+            # The new version is in place, but the old tail is not. Report the
+            # full extent so the recorded watermark still covers those ids.
+            raise SearchOperationError(
+                str(error), chunks_left_behind=max(previous_count, len(records))
+            ) from error
         return len(records)
 
-    def _rollback_partial_upload(self, document_name: str, count: int) -> str:
-        """Best-effort removal of a half-written document; never masks the cause."""
+    def _rollback_partial_upload(self, document_name: str, count: int) -> tuple[str, int]:
+        """Best-effort removal of a half-written document; never masks the cause.
+
+        Returns the note to append to the error and how many chunk ids may still
+        be in the index afterwards.
+        """
         try:
             self._delete_ids(document_name, [_chunk_id(document_name, n) for n in range(count)])
         except SearchOperationError as error:
-            return f" The partially written chunks could not be removed either: {error}"
-        return " The partially written chunks were removed."
+            return (
+                f" The partially written chunks could not be removed either: {error}",
+                count,
+            )
+        return " The partially written chunks were removed.", 0
 
     def query(self, question: str, top: int = 5) -> list[dict]:
         vectors = self._embed([question])

@@ -374,7 +374,11 @@ def _index_single_document_locked(document_name: str) -> dict:
     try:
         chunks = search.index_document(document, text)
     except (SearchOperationError, SearchConfigurationError, HttpResponseError, ServiceRequestError) as error:
-        status = {"status": "failed", "error": str(error)}
+        status = {
+            "status": "failed",
+            "error": str(error),
+            "chunks": _chunks_left_behind(error),
+        }
         _record_index_status(document_name, status)
         return status
     status = {"status": "indexed", "index": search.settings.index_name, "chunks": chunks}
@@ -423,7 +427,7 @@ def _commit_index_result(document_name: str, token: str, status: dict) -> bool:
             return False
         if not is_search_eligible(document) or _approval_token(document) != token:
             return False
-        document["searchIndex"] = status
+        document["searchIndex"] = _with_chunk_high_water(document.get("searchIndex"), status)
         save_documents(documents, DATA_PATH)
         return True
 
@@ -455,6 +459,55 @@ def _discard_stale_index_write(
     return status
 
 
+def _as_chunk_count(value: object) -> int:
+    try:
+        count = int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+    return max(count, 0)
+
+
+def _chunks_still_indexed(previous: object, status: dict) -> int:
+    """How many chunks this document may still have in the index.
+
+    Deletions are driven by this number, so it has to survive every failure. A
+    failed status that dropped it would leave the next attempt computing zero
+    stale ids, and superseded chunks would stay citable permanently and
+    silently. It only returns to zero once a removal has actually succeeded.
+
+    It never decreases while chunks are still present, so a re-index that
+    produces fewer chunks than the previous one still remembers the higher
+    watermark and a later withdrawal deletes the surplus ids too.
+    """
+    previous = previous if isinstance(previous, dict) else {}
+    carried = max(
+        _as_chunk_count(previous.get("indexedChunks")),
+        _as_chunk_count(previous.get("chunks")),
+    )
+    if "removedChunks" in status:
+        return 0
+    return max(carried, _as_chunk_count(status.get("chunks")))
+
+
+def _with_chunk_high_water(previous: object, status: dict) -> dict:
+    return {**status, "indexedChunks": _chunks_still_indexed(previous, status)}
+
+
+def _outstanding_chunks(document: dict) -> int:
+    """The chunk count the next removal attempt should delete."""
+    previous = document.get("searchIndex")
+    previous = previous if isinstance(previous, dict) else {}
+    return max(
+        _as_chunk_count(previous.get("indexedChunks")),
+        _as_chunk_count(previous.get("chunks")),
+    )
+
+
+def _chunks_left_behind(error: Exception) -> int:
+    """How many chunk ids a failed search operation may have left in the index."""
+    return _as_chunk_count(getattr(error, "chunks_left_behind", 0))
+
+
 def _current_document(document_name: str) -> dict | None:
     """Read one document as it stands right now.
 
@@ -478,7 +531,9 @@ def _record_index_status(document_name: str, status: dict) -> None:
         documents = load_documents(DATA_PATH)
         for document in documents:
             if document.get("documentName") == document_name:
-                document["searchIndex"] = status
+                document["searchIndex"] = _with_chunk_high_water(
+                    document.get("searchIndex"), status
+                )
                 break
         save_documents(documents, DATA_PATH)
 
@@ -507,7 +562,12 @@ def _withdraw_from_index_locked(document: dict) -> dict | None:
     document_name = document.get("documentName", "")
     previous = document.get("searchIndex")
     previous = previous if isinstance(previous, dict) else {}
-    if not document_name or previous.get("status") != "indexed":
+    outstanding = _outstanding_chunks(document)
+    if not document_name:
+        return None
+    if previous.get("status") != "indexed" and outstanding == 0:
+        # Nothing is known to be in the index. A previous withdrawal that failed
+        # still counts as outstanding, so it is retried rather than stranded.
         return None
     if is_search_eligible(document):
         return None
@@ -517,15 +577,13 @@ def _withdraw_from_index_locked(document: dict) -> dict | None:
         # Search is not configured, so there is nothing indexed to withdraw.
         return None
     try:
-        removed = search.remove_document(
-            document_name, known_chunk_count=int(previous.get("chunks") or 0)
-        )
+        removed = search.remove_document(document_name, known_chunk_count=outstanding)
     except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
         status = {
             "status": "withdrawal-failed",
             "error": str(error),
             "reason": "Approval was revoked but the indexed chunks could not be removed.",
-            "chunks": previous.get("chunks"),
+            "chunks": max(outstanding, _chunks_left_behind(error)),
         }
         _record_index_status(document_name, status)
         return status
@@ -582,11 +640,14 @@ def _reindex_one_locked(search: ApprovedKnowledgeSearch, name: str) -> dict:
         # Approval status is frozen into each chunk at index time, so a
         # document that loses approval must be withdrawn from the index too.
         try:
-            previous = document.get("searchIndex")
-            previous_count = previous.get("chunks", 0) if isinstance(previous, dict) else 0
-            withdrawn = search.remove_document(name, known_chunk_count=int(previous_count or 0))
+            previous_count = _outstanding_chunks(document)
+            withdrawn = search.remove_document(name, known_chunk_count=previous_count)
         except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
-            _record_index_status(name, {"status": "failed", "error": str(error)})
+            _record_index_status(name, {
+                "status": "failed",
+                "error": str(error),
+                "chunks": max(previous_count, _chunks_left_behind(error)),
+            })
             return {**_NO_CHANGE, "failed": 1}
         _record_index_status(name, {
             "status": "blocked",
@@ -598,7 +659,11 @@ def _reindex_one_locked(search: ApprovedKnowledgeSearch, name: str) -> dict:
     try:
         chunks = search.index_document(document, text)
     except (SearchOperationError, HttpResponseError, ServiceRequestError) as error:
-        _record_index_status(name, {"status": "failed", "error": str(error)})
+        _record_index_status(name, {
+            "status": "failed",
+            "error": str(error),
+            "chunks": _chunks_left_behind(error),
+        })
         return {**_NO_CHANGE, "failed": 1}
     status = {"status": "indexed", "index": search.settings.index_name, "chunks": chunks}
     if not _commit_index_result(name, token, status):

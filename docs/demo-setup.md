@@ -110,11 +110,12 @@ The resource group must already exist — the template references it as
 **change them for a new deployment**, since the Search service name must be
 globally unique.
 
-`applicationPrincipalId` is empty in the checked-in parameters file. Both role
-assignments are conditional on it being non-empty, and the service is deployed
-with `disableLocalAuth: true` (no API keys). **Deploying without it produces a
-Search service that nothing can authenticate to.** Either pass the object ID as
-shown above or assign the roles manually.
+`applicationPrincipalId` is intentionally not present in the checked-in
+parameters file. It is a required deployment parameter, and the service is
+deployed with `disableLocalAuth: true` (no API keys). **Deploying without the
+application principal now fails before provisioning instead of producing a
+Search service that nothing can authenticate to.** Pass the object ID as shown
+above or assign the roles manually.
 
 ---
 
@@ -302,13 +303,14 @@ guard and should stay unset.
 
 ---
 
-## Known issues to be aware of
+## Findings resolved in this branch
 
 | Issue | Impact |
 |---|---|
-| `infra\main.parameters.json` has an empty `applicationPrincipalId` and states `eastus2` while the live Search service is in East US | A clean deployment yields a Search service nothing can authenticate to |
-| `taxonomy-unavailable` is an acknowledge-only review flag | If the taxonomy file is missing, tag validation is silently skipped and the flag can be cleared in one click. Non-empty tags are then unvalidated; empty required fields are still blocked |
-| A failed stale-chunk delete loses the recorded chunk count | Superseded chunks can stay citable permanently, with no error surfaced |
+| Empty `applicationPrincipalId` and incorrect example region | The principal is now required before deployment, and the example uses `eastus` |
+| Taxonomy loading could be acknowledged as resolved | Approval is blocked until the taxonomy is restored; the unavailable-taxonomy flag cannot be acknowledged as if validation had happened |
+| Failed stale-chunk deletion lost the recorded chunk count | Failed index operations preserve a high-water chunk count, so retries continue deleting the potentially citable ids |
 
-The first is the one to fix before any new deployment; the other two are
-correctness issues in edge paths rather than demo blockers.
+These fixes are covered by focused tests. The deployment template still requires
+an operator to replace the explicit placeholder values in
+`infra\main.parameters.json` and pass the application principal object ID.

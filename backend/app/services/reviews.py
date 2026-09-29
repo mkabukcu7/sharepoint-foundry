@@ -232,8 +232,11 @@ def _classification_flags(document: dict, fields: dict, stored: dict, taxonomy: 
         derived.append({
             "id": "taxonomy-unavailable",
             "type": "taxonomy-unavailable",
-            "acknowledgeOnly": True,
-            "message": "The controlled taxonomy could not be loaded, so tags were not validated.",
+            "acknowledgeOnly": False,
+            "message": (
+                "The controlled taxonomy could not be loaded, so tags cannot be "
+                "validated. Restore the taxonomy before approving this document."
+            ),
         })
 
     flags = []
