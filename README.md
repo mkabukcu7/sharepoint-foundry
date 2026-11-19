@@ -4,6 +4,28 @@ Proof-of-concept repository showing AI-powered metadata extraction and tagging f
 
 The MVP ingests PDF, Word, and PowerPoint documents from local samples or SharePoint, extracts their text, uses a Microsoft Foundry prompt agent to generate metadata, and presents a filterable catalog.
 
+## Documentation map
+
+- [docs/demo-setup.md](docs/demo-setup.md) — offline and Azure demo setup, RBAC, configuration, and handoff
+- [docs/architecture.md](docs/architecture.md) — implemented architecture, security boundaries, and target-state plan
+- [.env.example](.env.example) — local configuration template
+- [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) — repository change checklist
+
+## POC status and security boundary
+
+This is a customer demonstration, not a production authorization or document-governance
+system. The catalog, metadata review, and controlled-taxonomy workflow are implemented.
+Azure AI Search grounding is implemented for approved content, but the librarian chat is
+bound to loopback and is not authenticated per user or SharePoint permissions.
+
+| Area | Implemented POC behavior | Production gap |
+|---|---|---|
+| Metadata | Local/SharePoint ingestion and Foundry or mock extraction | Enterprise workflow orchestration and durable storage |
+| Taxonomy | Controlled vocabulary and named-review approval | Managed-term-store integration |
+| SharePoint | Staging, ETag-protected writes, and move to Reviewed | Service-approved permission model and lifecycle policy |
+| Search | Approved-only chunks, embeddings, citations, and revocation | Employee authentication and ACL/security trimming |
+| Librarian chat | Loopback-only grounded answers and intake triage | Delegated user identity and permission-aware retrieval |
+
 ## What this demonstrates
 
 - Automated text extraction from representative enterprise documents

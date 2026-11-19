@@ -16,7 +16,7 @@ Start with Tier 1 and confirm it works before provisioning anything.
 Requires only Python 3.12 or later.
 
 ```powershell
-git clone <repository-url>
+git clone https://github.com/mkabukcu7/sharepoint-foundry.git
 cd sharepoint-foundry
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -205,7 +205,9 @@ roles to it, and set `FOUNDRY_CREDENTIAL_MODE=default`.
 ## Configuration
 
 Copy `.env.example` to `.env` and fill it in. `.env` is gitignored and must
-never be committed — it holds a client secret in the reference environment.
+never be committed. It can contain tenant configuration or service credentials;
+keep secrets only in approved secret storage and use managed identity or Azure CLI
+authentication wherever possible.
 
 Minimum for **Tier 2 chat with grounded answers**:
 
@@ -302,8 +304,9 @@ immediately.
 
 ### Reference environment state
 
-At last verification: 175 chunk documents in `wtw-approved-knowledge`; 12 files
-in `sample-documents` locally, of which 10 are tracked.
+At the most recent recorded verification, the reference machine had 175 chunk
+documents in `wtw-approved-knowledge` and 12 files in `sample-documents`, of
+which 10 were tracked.
 
 The two untracked files are customer material and do not travel with the
 repository. A fresh clone therefore has a **smaller answerable corpus** than the
